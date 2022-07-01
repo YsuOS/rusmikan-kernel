@@ -16,9 +16,8 @@
         "ld.lld": [
             "--entry=kernel_main",
 	    "--image-base=0x100000",
-	    "-okernel.elf",
-	    "--static",
-	    "--nmagic"
+	    "-otarget/x86_64-rusmikan/debug/kernel.elf",
+	    "--static"
 	]
     }
 }
