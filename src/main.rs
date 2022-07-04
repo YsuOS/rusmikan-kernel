@@ -18,6 +18,25 @@ struct Rgb {
     b: u8,
 }
 
+const FONT_A: [u8; 16] = [
+    0b00000000,
+    0b00011000,
+    0b00011000,
+    0b00011000,
+    0b00011000,
+    0b00100100,
+    0b00100100,
+    0b00100100,
+    0b00100100,
+    0b01111110,
+    0b01000010,
+    0b01000010,
+    0b01000010,
+    0b11100111,
+    0b00000000,
+    0b00000000,
+];
+
 #[no_mangle]
 pub extern "sysv64" fn kernel_main (fb_config: FrameBufferConfig) -> ! {
     let vert = fb_config.vertical_resolution;
@@ -51,6 +70,16 @@ pub extern "sysv64" fn kernel_main (fb_config: FrameBufferConfig) -> ! {
         }
     }
 
+    for y in 0..16 {
+        for x in 0..8 {
+            if (FONT_A[y] << x & 0x80) != 0 {
+                unsafe {
+                    write_pixel(&mut fb, (x+pixels_per_scan_line*y)*4, Rgb {r:0, g:0, b:255});
+                }
+            }
+        }
+    }
+    
     loop{
         unsafe {
             asm!("hlt");
