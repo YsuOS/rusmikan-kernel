@@ -1,48 +1,24 @@
 #![no_std]
 #![no_main]
 
+mod graphics;
+mod font;
+
 use core::panic::PanicInfo;
 use core::arch::asm;
 use rusmikan::FrameBufferConfig;
-use uefi::proto::console::gop::FrameBuffer;
+use graphics::{PixelWriter, Rgb, RGBResv8BitPerColorPixelWriter, BGRResv8BitPerColorPixelWriter};
+use font::write_ascii;
 
 #[panic_handler]
 fn panic(_info: &PanicInfo) -> ! {
     loop{}
 }
 
-#[derive(Copy,Clone)]
-struct Rgb {
-    r: u8,
-    g: u8,
-    b: u8,
-}
-
-const FONT_A: [u8; 16] = [
-    0b00000000,
-    0b00011000,
-    0b00011000,
-    0b00011000,
-    0b00011000,
-    0b00100100,
-    0b00100100,
-    0b00100100,
-    0b00100100,
-    0b01111110,
-    0b01000010,
-    0b01000010,
-    0b01000010,
-    0b11100111,
-    0b00000000,
-    0b00000000,
-];
-
 #[no_mangle]
-pub extern "sysv64" fn kernel_main (fb_config: FrameBufferConfig) -> ! {
+pub extern "sysv64" fn kernel_main (mut fb_config: FrameBufferConfig) -> ! {
     let vert = fb_config.vertical_resolution;
     let hori = fb_config.horizontal_resolution;
-    let pixels_per_scan_line = fb_config.pixels_per_scan_line;
-    let mut fb = fb_config.frame_buffer;
 
     let rgb = Rgb {
         r: 241,
@@ -50,36 +26,21 @@ pub extern "sysv64" fn kernel_main (fb_config: FrameBufferConfig) -> ! {
         b: 0,
     };
 
-    type PixelWriter = unsafe fn(&mut FrameBuffer, usize, Rgb);
-    unsafe fn write_pixel_rgb(fb: &mut FrameBuffer, pixel_base: usize, rgb: Rgb) {
-        fb.write_value::<[u8;3]>(pixel_base, [rgb.r, rgb.g, rgb.b]);
-    }
-    unsafe fn write_pixel_bgr(fb: &mut FrameBuffer, pixel_base: usize, rgb: Rgb) {
-        fb.write_value::<[u8;3]>(pixel_base, [rgb.b, rgb.g, rgb.r]);
-    }
-    let write_pixel: PixelWriter = match fb_config.pixel_format {
-        rusmikan::PixelFormat::PixelRGBResv8BitPerColor => write_pixel_rgb,
-        rusmikan::PixelFormat::PixelBGRResv8BitPerColor => write_pixel_bgr,
+    let pixel_writer: &dyn PixelWriter = match fb_config.pixel_format {
+        rusmikan::PixelFormat::PixelRGBResv8BitPerColor => &RGBResv8BitPerColorPixelWriter,
+        rusmikan::PixelFormat::PixelBGRResv8BitPerColor => &BGRResv8BitPerColorPixelWriter,
     };
-
+ 
     for y in 0..vert {
         for x in 0..hori {
             unsafe {
-                write_pixel(&mut fb, (x+pixels_per_scan_line*y)*4, rgb);
+                pixel_writer.write(&mut fb_config, x, y, rgb);
             }
         }
     }
 
-    for y in 0..16 {
-        for x in 0..8 {
-            if (FONT_A[y] << x & 0x80) != 0 {
-                unsafe {
-                    write_pixel(&mut fb, (x+pixels_per_scan_line*y)*4, Rgb {r:0, g:0, b:255});
-                }
-            }
-        }
-    }
-    
+    write_ascii(pixel_writer, &mut fb_config, 0, 0, 'A', Rgb {r: 0, g: 0, b: 255});
+
     loop{
         unsafe {
             asm!("hlt");
