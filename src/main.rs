@@ -9,7 +9,7 @@ use core::panic::PanicInfo;
 use core::arch::asm;
 use rusmikan::FrameBufferConfig;
 use graphics::{PixelWriter, Rgb, RGBResv8BitPerColorPixelWriter, BGRResv8BitPerColorPixelWriter};
-use font::write_ascii;
+use font::{write_ascii,write_string};
 
 #[panic_handler]
 fn panic(_info: &PanicInfo) -> ! {
@@ -40,7 +40,8 @@ pub extern "sysv64" fn kernel_main (mut fb_config: FrameBufferConfig) -> ! {
         }
     }
 
-    write_ascii(pixel_writer, &mut fb_config, 0, 0, 'A', Rgb {r: 0, g: 0, b: 255});
+    write_string(pixel_writer, &mut fb_config, 0, 0, "A", Rgb {r: 0, g: 0, b: 255});
+    write_string(pixel_writer, &mut fb_config, 0, 16, "Hello World!", Rgb {r: 0, g: 0, b: 255});
 
     loop{
         unsafe {

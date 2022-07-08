@@ -2,24 +2,12 @@ use rusmikan::FrameBufferConfig;
 use crate::graphics::{PixelWriter,Rgb};
 use crate::ascii_font::FONTS;
 
-//const FONT_A: [u8; 16] = [
-//    0b00000000,
-//    0b00011000,
-//    0b00011000,
-//    0b00011000,
-//    0b00011000,
-//    0b00100100,
-//    0b00100100,
-//    0b00100100,
-//    0b00100100,
-//    0b01111110,
-//    0b01000010,
-//    0b01000010,
-//    0b01000010,
-//    0b11100111,
-//    0b00000000,
-//    0b00000000,
-//];
+// x and y is a point in pixel, not column and row in string
+pub fn write_string(pixel_writer: &dyn PixelWriter, fb_config: &mut FrameBufferConfig, x: usize, y: usize, s: &str, rgb: Rgb) {
+    for (i, c) in s.chars().enumerate() {
+        write_ascii(pixel_writer, fb_config, x+8*i, y, c, rgb);
+    }
+}
 
 pub fn write_ascii(pixel_writer: &dyn PixelWriter, fb_config: &mut FrameBufferConfig, x: usize, y: usize, c: char, rgb: Rgb) {
     if (c as u32) > 0x7f {
