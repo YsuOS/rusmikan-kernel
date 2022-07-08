@@ -3,6 +3,7 @@
 
 mod graphics;
 mod font;
+mod ascii_font;
 
 use core::panic::PanicInfo;
 use core::arch::asm;
