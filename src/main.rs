@@ -9,7 +9,10 @@ use core::panic::PanicInfo;
 use core::arch::asm;
 use rusmikan::FrameBufferConfig;
 use graphics::{PixelWriter, Rgb, RGBResv8BitPerColorPixelWriter, BGRResv8BitPerColorPixelWriter};
-use font::{write_ascii,write_string};
+use font::write_string;
+use arrayvec::ArrayString;
+use core::fmt::Write;
+
 
 #[panic_handler]
 fn panic(_info: &PanicInfo) -> ! {
@@ -42,6 +45,10 @@ pub extern "sysv64" fn kernel_main (mut fb_config: FrameBufferConfig) -> ! {
 
     write_string(pixel_writer, &mut fb_config, 0, 0, "A", Rgb {r: 0, g: 0, b: 255});
     write_string(pixel_writer, &mut fb_config, 0, 16, "Hello World!", Rgb {r: 0, g: 0, b: 255});
+
+    let mut buf = ArrayString::<128>::new();
+    write!(&mut buf, "1 + 2 = {}", 1 + 2).unwrap();
+    write_string(pixel_writer, &mut fb_config, 0, 32, &buf, Rgb {r: 0, g: 0, b: 255});
 
     loop{
         unsafe {
