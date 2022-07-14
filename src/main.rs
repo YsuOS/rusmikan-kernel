@@ -4,6 +4,7 @@
 mod graphics;
 mod font;
 mod ascii_font;
+mod console;
 
 use core::panic::PanicInfo;
 use core::arch::asm;
@@ -12,6 +13,7 @@ use graphics::{PixelWriter, Rgb, RGBResv8BitPerColorPixelWriter, BGRResv8BitPerC
 use font::write_string;
 use arrayvec::ArrayString;
 use core::fmt::Write;
+use console::put_string;
 
 
 #[panic_handler]
@@ -43,12 +45,16 @@ pub extern "sysv64" fn kernel_main (mut fb_config: FrameBufferConfig) -> ! {
         }
     }
 
-    write_string(pixel_writer, &mut fb_config, 0, 0, "A", Rgb {r: 0, g: 0, b: 255});
-    write_string(pixel_writer, &mut fb_config, 0, 16, "Hello World!", Rgb {r: 0, g: 0, b: 255});
+    //write_string(pixel_writer, &mut fb_config, 0, 0, "A", Rgb {r: 0, g: 0, b: 255});
+    //write_string(pixel_writer, &mut fb_config, 0, 16, "Hello World!", Rgb {r: 0, g: 0, b: 255});
 
-    let mut buf = ArrayString::<128>::new();
-    write!(&mut buf, "1 + 2 = {}", 1 + 2).unwrap();
-    write_string(pixel_writer, &mut fb_config, 0, 32, &buf, Rgb {r: 0, g: 0, b: 255});
+    //let mut buf = ArrayString::<128>::new();
+    //write!(&mut buf, "1 + 2 = {}", 1 + 2).unwrap();
+    //write_string(pixel_writer, &mut fb_config, 0, 32, &buf, Rgb {r: 0, g: 0, b: 255});
+
+    printk(pixel_writer, &mut fb_config, format_args!("hello world {}", "!"));
+
+    //put_string(pixel_writer, &mut fb_config, "line 1\nline 2\n\nline 4\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nline 25\nline 26\nline 27\n");
 
     loop{
         unsafe {
@@ -57,3 +63,8 @@ pub extern "sysv64" fn kernel_main (mut fb_config: FrameBufferConfig) -> ! {
     }
 }
 
+fn printk (pixel_writer: &dyn PixelWriter, fb_config: &mut FrameBufferConfig, args: core::fmt::Arguments) {
+    let mut buf = ArrayString::<128>::new();
+    write!(&mut buf, "{}", args).unwrap();
+    put_string(pixel_writer, fb_config, &buf);
+}
