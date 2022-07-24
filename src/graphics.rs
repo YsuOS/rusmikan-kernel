@@ -40,7 +40,7 @@ impl<'gop> Graphic<'gop> {
         }
     }
 
-    fn write_ascii(&mut self, x: usize, y: usize, c: char, rgb: Rgb) {
+    pub fn write_ascii(&mut self, x: usize, y: usize, c: char, rgb: Rgb) {
         if (c as u32) > 0x7f {
             return;
         }
