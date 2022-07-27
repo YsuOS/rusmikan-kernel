@@ -1,6 +1,6 @@
-use rusmikan::FrameBufferConfig;
-use uefi::proto::console::gop::FrameBuffer;
+use rusmikan::{FrameBuffer,FrameBufferConfig};
 use crate::ascii_font::FONTS;
+use crate::BG_COLOR;
 
 #[derive(Copy,Clone)]
 pub struct Rgb {
@@ -9,13 +9,21 @@ pub struct Rgb {
     pub b: u8,
 }
 
-pub struct Graphic<'gop> {
-    fb_config: FrameBufferConfig<'gop>,
+
+pub static mut GRAPHIC: Option<Graphic> = None;
+
+pub struct Graphic {
+    fb_config: FrameBufferConfig,
     pixel_writer: unsafe fn(&mut FrameBuffer, usize, Rgb),
 }
 
-impl<'gop> Graphic<'gop> {
-    pub fn new(fb_config: FrameBufferConfig<'gop>) -> Self {
+impl Graphic {
+    pub unsafe fn init(fb_config: FrameBufferConfig) -> &'static mut Self {
+        GRAPHIC = Some(Self::new(fb_config));
+        GRAPHIC.as_mut().unwrap()
+    }
+
+    pub fn new(fb_config: FrameBufferConfig) -> Self {
         unsafe fn write_pixel_rgb(fb: &mut FrameBuffer, base: usize, rgb: Rgb) {
             fb.write_value(base, [rgb.r, rgb.g, rgb.b]);
         }
@@ -54,9 +62,20 @@ impl<'gop> Graphic<'gop> {
         }
     }
 
-    pub fn write_string(&mut self, x: usize, y: usize, s: &str, rgb: Rgb) {
-        for (i, c) in s.chars().enumerate() {
-            self.write_ascii(x+(u8::BITS as usize)*i, y, c, rgb);
+    //pub fn write_string(&mut self, x: usize, y: usize, s: &str, rgb: Rgb) {
+    //    for (i, c) in s.chars().enumerate() {
+    //        self.write_ascii(x+(u8::BITS as usize)*i, y, c, rgb);
+    //    }
+    //}
+
+    pub fn clear(&mut self) {
+        let vert = self.fb_config.vertical_resolution;
+        let hori = self.fb_config.horizontal_resolution;
+
+        for y in 0..vert {
+            for x in 0..hori {
+                self.write(x, y, BG_COLOR);
+            }
         }
     }
 }

@@ -9,6 +9,8 @@ edition = "2021"
 rusmikan = { path = ".." }
 uefi = "0.16.0"
 arrayvec = { version = "0.7.2", default-features = false }
+lazy_static = { version = "1.4.0", features = ["spin_no_std"] }
+spin = "0.9.4"
 
 [profile.dev]
 panic = "abort"
