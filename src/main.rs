@@ -4,6 +4,7 @@
 mod graphics;
 mod ascii_font;
 mod console;
+mod pci;
 
 use core::panic::PanicInfo;
 use core::arch::asm;
@@ -11,6 +12,7 @@ use rusmikan::FrameBufferConfig;
 use graphics::{Graphic, Rgb};
 use core::fmt::Write;
 use console::CONSOLE;
+use pci::list_pci_devices;
 
 const BG_COLOR: Rgb = Rgb { r: 241, g:141, b:0 };
 
@@ -21,6 +23,7 @@ fn panic(_info: &PanicInfo) -> ! {
 
 #[no_mangle]
 pub extern "sysv64" fn kernel_main (fb_config: FrameBufferConfig) -> ! {
+
     let graphic = unsafe { Graphic::init(fb_config) };
     graphic.clear();
 
@@ -34,6 +37,8 @@ pub extern "sysv64" fn kernel_main (fb_config: FrameBufferConfig) -> ! {
     println!(" World!");
     println!("This is Rusmikan");
     println!("1 + 2 = {}", 1 + 2);
+
+    list_pci_devices();
 
     loop{
         unsafe {
