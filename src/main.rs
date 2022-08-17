@@ -5,6 +5,7 @@ mod graphics;
 mod ascii_font;
 mod console;
 mod pci;
+mod ps2;
 
 use core::panic::PanicInfo;
 use core::arch::asm;
@@ -13,6 +14,7 @@ use graphics::{Graphic, Rgb};
 use core::fmt::Write;
 use console::CONSOLE;
 use pci::list_pci_devices;
+use ps2::poll;
 
 const BG_COLOR: Rgb = Rgb { r: 241, g:141, b:0 };
 
@@ -40,6 +42,7 @@ pub extern "sysv64" fn kernel_main (fb_config: FrameBufferConfig) -> ! {
 
     list_pci_devices();
 
+    poll();
     loop{
         unsafe {
             asm!("hlt");
