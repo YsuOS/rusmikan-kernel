@@ -1,10 +1,12 @@
 #![no_std]
 #![no_main]
+#![feature(abi_x86_interrupt)]
 
 mod graphics;
 mod ascii_font;
 mod console;
 mod pci;
+mod interrupts;
 
 use core::panic::PanicInfo;
 use core::arch::asm;
@@ -13,6 +15,7 @@ use graphics::{Graphic, Rgb};
 use core::fmt::Write;
 use console::CONSOLE;
 use pci::list_pci_devices;
+use interrupts::init_idt;
 
 const BG_COLOR: Rgb = Rgb { r: 241, g:141, b:0 };
 
@@ -39,6 +42,9 @@ pub extern "sysv64" fn kernel_main (fb_config: FrameBufferConfig) -> ! {
     println!("1 + 2 = {}", 1 + 2);
 
     list_pci_devices();
+
+    init_idt();
+    x86_64::instructions::interrupts::int3();
 
     loop{
         unsafe {
