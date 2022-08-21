@@ -24,10 +24,16 @@ fn panic(_info: &PanicInfo) -> ! {
     loop{}
 }
 
-#[no_mangle]
-pub extern "sysv64" fn kernel_main (fb_config: FrameBufferConfig, memory_map: MemoryMap) -> ! {
+#[repr(align(16))]
+struct KernelMainStack([u8; 1024 * 1024]);
 
-    let graphic = unsafe { Graphic::init(fb_config) };
+#[no_mangle]
+static mut KERNEL_MAIN_STACK: KernelMainStack = KernelMainStack([0; 1024 * 1024]);
+
+#[no_mangle]
+pub extern "sysv64" fn kernel_main_new_stack (fb_config: &FrameBufferConfig, memory_map: &MemoryMap) -> ! {
+
+    let graphic = unsafe { Graphic::init(*fb_config) };
     graphic.clear();
 
     //graphic.write_string(0, 16, "Hello World!", Rgb {r: 0, g: 0, b: 255});
