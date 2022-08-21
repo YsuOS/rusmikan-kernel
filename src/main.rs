@@ -10,7 +10,7 @@ mod interrupts;
 
 use core::panic::PanicInfo;
 use core::arch::asm;
-use rusmikan::FrameBufferConfig;
+use rusmikan::{FrameBufferConfig,MemoryMap};
 use graphics::{Graphic, Rgb};
 use core::fmt::Write;
 use console::CONSOLE;
@@ -25,7 +25,7 @@ fn panic(_info: &PanicInfo) -> ! {
 }
 
 #[no_mangle]
-pub extern "sysv64" fn kernel_main (fb_config: FrameBufferConfig) -> ! {
+pub extern "sysv64" fn kernel_main (fb_config: FrameBufferConfig, memory_map: MemoryMap) -> ! {
 
     let graphic = unsafe { Graphic::init(fb_config) };
     graphic.clear();
@@ -45,6 +45,11 @@ pub extern "sysv64" fn kernel_main (fb_config: FrameBufferConfig) -> ! {
 
     init_idt();
     x86_64::instructions::interrupts::int3();
+
+    let mm = memory_map.descriptors();
+    for d in mm {
+        println!("{:?}", d);
+    }
 
     loop{
         unsafe {
