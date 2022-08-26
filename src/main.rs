@@ -7,6 +7,7 @@ mod ascii_font;
 mod console;
 mod pci;
 mod interrupts;
+mod segment;
 
 use core::panic::PanicInfo;
 use core::arch::asm;
@@ -32,6 +33,7 @@ static mut KERNEL_MAIN_STACK: KernelMainStack = KernelMainStack([0; 1024 * 1024]
 
 #[no_mangle]
 pub extern "sysv64" fn kernel_main_new_stack (fb_config: &FrameBufferConfig, memory_map: &MemoryMap) -> ! {
+    unsafe { segment::init() };
 
     let graphic = unsafe { Graphic::init(*fb_config) };
     graphic.clear();
