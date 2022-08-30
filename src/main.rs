@@ -9,6 +9,7 @@ mod pci;
 mod interrupts;
 mod segment;
 mod paging;
+mod mm;
 
 use core::panic::PanicInfo;
 use core::arch::asm;
@@ -18,6 +19,7 @@ use core::fmt::Write;
 use console::CONSOLE;
 use pci::list_pci_devices;
 use interrupts::init_idt;
+use mm::BitMapMemoryManager;
 
 const BG_COLOR: Rgb = Rgb { r: 241, g:141, b:0 };
 
@@ -34,11 +36,13 @@ static mut KERNEL_MAIN_STACK: KernelMainStack = KernelMainStack([0; 1024 * 1024]
 
 #[no_mangle]
 pub extern "sysv64" fn kernel_main_new_stack (fb_config: &FrameBufferConfig, memory_map: &MemoryMap) -> ! {
-    unsafe { segment::init() };
-    unsafe { paging::init() };
-
     let graphic = unsafe { Graphic::init(*fb_config) };
     graphic.clear();
+
+    unsafe { segment::init() };
+    unsafe { BitMapMemoryManager::init(memory_map) };
+    unsafe { paging::init() };
+
 
     //graphic.write_string(0, 16, "Hello World!", Rgb {r: 0, g: 0, b: 255});
     
