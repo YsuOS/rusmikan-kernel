@@ -11,12 +11,16 @@ pub static mut BITMAP_MEMORY_MANAGER: BitMapMemoryManager = BitMapMemoryManager:
 #[derive(Debug)]
 pub struct BitMapMemoryManager {
     alloc_map: [usize; FRAME_COUNTS / BITS_PER_MAP_LINE],
+    begin: usize,
+    end: usize,
 }
 
 impl BitMapMemoryManager {
     const fn new() -> Self {
         Self {
             alloc_map: [0; FRAME_COUNTS / BITS_PER_MAP_LINE],
+            begin: 0,
+            end: FRAME_COUNTS,
         }
     }
 
@@ -32,16 +36,17 @@ impl BitMapMemoryManager {
             }
             available_end = phys_end;
         }
+        BITMAP_MEMORY_MANAGER.end = available_end;
     }
 
     fn mark_allocated(&mut self, start_frame_id: usize, frame_num: usize) {
         for i in 0..frame_num {
             let index = start_frame_id + i;
-            self.set_bits(index, true);
+            self.set_bit(index, true);
         }
     }
 
-    fn set_bits(&mut self, index: usize, allocated: bool) {
+    fn set_bit(&mut self, index: usize, allocated: bool) {
         let line_index = index / BITS_PER_MAP_LINE;
         let bit_index = index % BITS_PER_MAP_LINE;
 
@@ -49,6 +54,34 @@ impl BitMapMemoryManager {
             self.alloc_map[line_index] |= 1 << bit_index;
         } else {
             self.alloc_map[line_index] &= !(1 << bit_index);
+        }
+    }
+
+    fn get_bit(&mut self, index: usize) -> bool {
+        let line_index = index / BITS_PER_MAP_LINE;
+        let bit_index = index % BITS_PER_MAP_LINE;
+
+        (self.alloc_map[line_index] & 1 << bit_index) != 0
+    }
+
+    pub fn allocate(&mut self, num_frames: usize) -> bool {
+        let mut frame = self.begin;
+        loop {
+            let mut i: usize = 0;
+            while i < num_frames {
+                if frame + i > self.end {
+                    return false;
+                }
+                if self.get_bit(frame+i) {
+                    break;
+                }
+                i += 1;
+            }
+            if i == num_frames {
+                self.mark_allocated(frame, num_frames);
+                return true;
+            }
+            frame += i + 1;
         }
     }
 }

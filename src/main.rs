@@ -19,7 +19,7 @@ use core::fmt::Write;
 use console::CONSOLE;
 use pci::list_pci_devices;
 use interrupts::init_idt;
-use mm::BitMapMemoryManager;
+use mm::{BitMapMemoryManager,BITMAP_MEMORY_MANAGER};
 
 const BG_COLOR: Rgb = Rgb { r: 241, g:141, b:0 };
 
@@ -63,6 +63,10 @@ pub extern "sysv64" fn kernel_main_new_stack (fb_config: &FrameBufferConfig, mem
     let mm = memory_map.descriptors();
     for d in mm {
         println!("{:?}", d);
+    }
+
+    unsafe {
+        println!("{}", BITMAP_MEMORY_MANAGER.allocate(4));
     }
 
     loop{
