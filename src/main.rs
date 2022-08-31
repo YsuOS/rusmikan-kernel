@@ -66,7 +66,8 @@ pub extern "sysv64" fn kernel_main_new_stack (fb_config: &FrameBufferConfig, mem
     }
 
     unsafe {
-        println!("{}", BITMAP_MEMORY_MANAGER.allocate(4));
+        let addr = BITMAP_MEMORY_MANAGER.allocate(4).unwrap();
+        BITMAP_MEMORY_MANAGER.free(addr, 4);
     }
 
     loop{

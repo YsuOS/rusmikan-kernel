@@ -64,13 +64,13 @@ impl BitMapMemoryManager {
         (self.alloc_map[line_index] & 1 << bit_index) != 0
     }
 
-    pub fn allocate(&mut self, num_frames: usize) -> bool {
+    pub fn allocate(&mut self, num_frames: usize) -> Option<usize> {
         let mut frame = self.begin;
         loop {
             let mut i: usize = 0;
             while i < num_frames {
                 if frame + i > self.end {
-                    return false;
+                    return None;
                 }
                 if self.get_bit(frame+i) {
                     break;
@@ -79,9 +79,15 @@ impl BitMapMemoryManager {
             }
             if i == num_frames {
                 self.mark_allocated(frame, num_frames);
-                return true;
+                return Some(frame);
             }
             frame += i + 1;
+        }
+    }
+
+    pub fn free(&mut self, frame: usize, num_frames: usize) {
+        for i in 0..num_frames {
+            self.set_bit(frame + i, false);
         }
     }
 }
