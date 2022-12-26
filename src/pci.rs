@@ -18,13 +18,6 @@ const EMPTY_DEVICE: Device = Device {
     bus: 0x0,
     device: 0x0,
     function: 0x0,
-//    header_type: 0x0,
-//    class_code: ClassCode {
-//        base: 0,
-//        sub: 0,
-//        interface: 0,
-//        revision: 0,
-//    },
 };
 
 #[derive(Copy, Clone, Debug)]
@@ -44,6 +37,7 @@ impl Display for ClassCode {
             )
     }
 }
+
 #[derive(Copy, Clone, Debug)]
 pub struct Device {
     pub bus: u8,
@@ -75,6 +69,7 @@ impl PciDevices {
     fn scan_device(&mut self, bus: u8, device: u8) {
         self.scan_function(bus, device, 0);
         if Device::new(bus, device, 0).is_single_function_device() {
+            self.scan_function(bus, device, 0);
             return;
         }
 
