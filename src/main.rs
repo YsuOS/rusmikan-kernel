@@ -6,7 +6,7 @@ mod graphics;
 mod ascii_font;
 mod console;
 mod pci;
-mod ps2;
+//mod ps2;
 mod interrupts;
 mod segment;
 mod paging;
@@ -19,8 +19,6 @@ use graphics::{Graphic, Rgb};
 use core::fmt::Write;
 use console::CONSOLE;
 use pci::list_pci_devices;
-use ps2::poll;
-use interrupts::init_idt;
 use mm::{BitMapMemoryManager,BITMAP_MEMORY_MANAGER};
 
 const BG_COLOR: Rgb = Rgb { r: 241, g:141, b:0 };
@@ -44,34 +42,19 @@ pub extern "sysv64" fn kernel_main_new_stack (fb_config: &FrameBufferConfig, mem
     unsafe { segment::init() };
     unsafe { BitMapMemoryManager::init(memory_map) };
     unsafe { paging::init() };
+    unsafe { interrupts::init() };
 
-
-    //graphic.write_string(0, 16, "Hello World!", Rgb {r: 0, g: 0, b: 255});
-    
-    //CONSOLE.lock().put_string(graphic, "\
-    //    line 1\nline 2\nline 3\nline 4\nline 5\nline 6\nline 7\nline 8\nline 9\nline 10\n\
-    //    line 11\nline 12\nline 13\nline 14\nline 15\nline 16\nline 17\nline 18\nline 19\nline 20\n\
-    //    line 21\nline 22\nline 23\nline 24\nline 25\nline 26\nline 27\n");
-//    print!("Hello");
-//    println!(" World!");
     println!("This is Rusmikan");
-//    println!("1 + 2 = {}", 1 + 2);
+    println!("1 + 2 = {}", 1 + 2);
+//    x86_64::instructions::interrupts::int3();
 
 //    list_pci_devices();
-
-    unsafe { let lapic_id = *(0xfee00020 as *mut u64) >> 24; // Get Local APIC ID
-        println!("{}", lapic_id);
-    }
-    unsafe { *(0xfee000b0 as *mut u64) = 0;} // EOI
-
-    poll();
-    init_idt();
-    x86_64::instructions::interrupts::int3();
-
-    let mm = memory_map.descriptors();
-    for d in mm {
-        println!("{:?}", d);
-    }
+//
+//
+//    let mm = memory_map.descriptors();
+//    for d in mm {
+//        println!("{:?}", d);
+//    }
 
     unsafe {
         let addr = BITMAP_MEMORY_MANAGER.allocate(4).unwrap();
