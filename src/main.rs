@@ -6,7 +6,7 @@ mod graphics;
 mod ascii_font;
 mod console;
 mod pci;
-//mod ps2;
+mod serial;
 mod interrupts;
 mod segment;
 mod paging;
@@ -24,7 +24,8 @@ use mm::{BitMapMemoryManager,BITMAP_MEMORY_MANAGER};
 const BG_COLOR: Rgb = Rgb { r: 241, g:141, b:0 };
 
 #[panic_handler]
-fn panic(_info: &PanicInfo) -> ! {
+fn panic(info: &PanicInfo) -> ! {
+    serial_println!("{}", info);
     loop{}
 }
 
@@ -48,9 +49,8 @@ pub extern "sysv64" fn kernel_main_new_stack (fb_config: &FrameBufferConfig, mem
     println!("1 + 2 = {}", 1 + 2);
 //    x86_64::instructions::interrupts::int3();
 
-//    list_pci_devices();
-//
-//
+    list_pci_devices();
+
     let mm = memory_map.descriptors();
     for d in mm {
         println!("{:?}", d);
@@ -61,6 +61,8 @@ pub extern "sysv64" fn kernel_main_new_stack (fb_config: &FrameBufferConfig, mem
         BITMAP_MEMORY_MANAGER.free(addr, 4);
     }
 
+    serial_println!("Serial Port Test");
+    //panic!();
     loop{
         unsafe {
             asm!("hlt");

@@ -101,6 +101,7 @@ dependencies = [
  "pc-keyboard",
  "rusmikan",
  "spin 0.9.4",
+ "uart_16550",
  "uefi",
  "x86_64",
 ]
@@ -141,6 +142,17 @@ dependencies = [
  "proc-macro2",
  "quote",
  "unicode-ident",
+]
+
+[[package]]
+name = "uart_16550"
+version = "0.2.18"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b074eb9300ad949edd74c529c0e8d451625af71bb948e6b65fe69f72dc1363d9"
+dependencies = [
+ "bitflags",
+ "rustversion",
+ "x86_64",
 ]
 
 [[package]]
