@@ -23,10 +23,30 @@ use mm::{BitMapMemoryManager,BITMAP_MEMORY_MANAGER};
 
 const BG_COLOR: Rgb = Rgb { r: 241, g:141, b:0 };
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[repr(u32)]
+pub enum QemuExitCode {
+    Success = 0x10,
+    Failed = 0x11,
+}
+
+pub fn exit_qemu(exit_code: QemuExitCode) {
+    use x86_64::instructions::port::Port;
+    unsafe {
+        let mut port = Port::new(0xf4);
+        port.write(exit_code as u32);
+    }
+}
+
 #[panic_handler]
 fn panic(info: &PanicInfo) -> ! {
     serial_println!("{}", info);
-    loop{}
+    exit_qemu(QemuExitCode::Failed);
+    loop {
+        unsafe {
+            asm!("hlt");
+        }
+    }
 }
 
 #[repr(align(16))]
@@ -62,7 +82,7 @@ pub extern "sysv64" fn kernel_main_new_stack (fb_config: &FrameBufferConfig, mem
     }
 
     serial_println!("Serial Port Test");
-    //panic!();
+    // panic!();
     loop{
         unsafe {
             asm!("hlt");
