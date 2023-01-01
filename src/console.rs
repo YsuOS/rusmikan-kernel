@@ -56,6 +56,9 @@ impl Console {
                    self.buffer[row][col] = self.buffer[row+1][col]
                 }
             }
+            for col in 0..COLUMNS {
+                self.buffer[ROWS][col] = ' ';
+            }
             self.row -= 1;
         }
     }

@@ -51,10 +51,10 @@ pub extern "sysv64" fn kernel_main_new_stack (fb_config: &FrameBufferConfig, mem
 //    list_pci_devices();
 //
 //
-//    let mm = memory_map.descriptors();
-//    for d in mm {
-//        println!("{:?}", d);
-//    }
+    let mm = memory_map.descriptors();
+    for d in mm {
+        println!("{:?}", d);
+    }
 
     unsafe {
         let addr = BITMAP_MEMORY_MANAGER.allocate(4).unwrap();
