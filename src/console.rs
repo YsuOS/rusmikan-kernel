@@ -48,16 +48,16 @@ impl Console {
         self.column = 0;
         self.row += 1;
         if self.row > ROWS {
-            graphic.clear();
-
-            for row in 0..ROWS {
+            for row in 0..ROWS+1 {
+                graphic.clear_line(row*HEIGHT_PER_WORD, HEIGHT_PER_WORD);
                 for col in 0..COLUMNS {
-                   graphic.write_ascii(col*WIDTH_PER_WORD, row*HEIGHT_PER_WORD, self.buffer[row+1][col], self.rgb);
-                   self.buffer[row][col] = self.buffer[row+1][col]
+                    if row == ROWS {
+                        self.buffer[row][col] = ' ';
+                    } else {
+                        self.buffer[row][col] = self.buffer[row+1][col];
+                        graphic.write_ascii(col*WIDTH_PER_WORD, row*HEIGHT_PER_WORD, self.buffer[row+1][col], self.rgb);
+                    }
                 }
-            }
-            for col in 0..COLUMNS {
-                self.buffer[ROWS][col] = ' ';
             }
             self.row -= 1;
         }

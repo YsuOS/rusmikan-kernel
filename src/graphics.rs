@@ -62,19 +62,18 @@ impl Graphic {
         }
     }
 
-    //pub fn write_string(&mut self, x: usize, y: usize, s: &str, rgb: Rgb) {
-    //    for (i, c) in s.chars().enumerate() {
-    //        self.write_ascii(x+(u8::BITS as usize)*i, y, c, rgb);
-    //    }
-    //}
-
     pub fn clear(&mut self) {
         let vert = self.fb_config.vertical_resolution;
+
+        self.clear_line(0, vert);
+    }
+    
+    pub fn clear_line(&mut self, y: usize, height: usize) {
         let hori = self.fb_config.horizontal_resolution;
 
-        for y in 0..vert {
+        for dy in y..y + height {
             for x in 0..hori {
-                self.write(x, y, BG_COLOR);
+                self.write(x, dy, BG_COLOR);
             }
         }
     }
