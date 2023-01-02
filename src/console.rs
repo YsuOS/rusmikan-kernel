@@ -14,7 +14,7 @@ lazy_static! {
 }
 
 pub struct Console {
-    buffer: [[char; COLUMNS]; ROWS+1],
+    buffer: [[char; COLUMNS]; ROWS],
     column: usize,
     row: usize,
     rgb: Rgb,
@@ -23,7 +23,7 @@ pub struct Console {
 impl Console {
     pub fn new() -> Self {
         Console {
-            buffer: [[0.into(); COLUMNS]; ROWS+1],
+            buffer: [[0.into(); COLUMNS]; ROWS],
             column: 0,
             row: 0,
             rgb: Rgb{r: 0, g: 0, b: 0},
@@ -47,15 +47,15 @@ impl Console {
     fn newline(&mut self, graphic: &mut Graphic) {
         self.column = 0;
         self.row += 1;
-        if self.row > ROWS {
-            for row in 0..ROWS+1 {
+        if self.row >= ROWS {
+            for row in 0..ROWS {
                 graphic.clear_line(row*HEIGHT_PER_WORD, HEIGHT_PER_WORD);
                 for col in 0..COLUMNS {
-                    if row == ROWS {
+                    if row + 1 == ROWS {
                         self.buffer[row][col] = ' ';
                     } else {
-                        self.buffer[row][col] = self.buffer[row+1][col];
-                        graphic.write_ascii(col*WIDTH_PER_WORD, row*HEIGHT_PER_WORD, self.buffer[row+1][col], self.rgb);
+                        self.buffer[row][col] = self.buffer[row + 1][col];
+                        graphic.write_ascii(col*WIDTH_PER_WORD, row*HEIGHT_PER_WORD, self.buffer[row + 1][col], self.rgb);
                     }
                 }
             }
