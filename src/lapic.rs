@@ -36,7 +36,7 @@ unsafe fn init_lapic_timer() {
     let timer_init_cnt = TMRINITCNT as *mut u32;
     *timer_div = X1;
     *lvt_timer = LVT_PERIODIC|(IRQ_OFFSET as u32 + IRQ_TMR);
-    ptr::write_volatile(timer_init_cnt, u32::MAX);
+    ptr::write_volatile(timer_init_cnt, 0x10000000);
 }
 
 pub unsafe fn start_lapic_timer() {

@@ -27,6 +27,8 @@ use crate::lapic::{start_lapic_timer, stop_lapic_timer, lapic_timer_elapsed};
 
 const BG_COLOR: Rgb = Rgb { r: 241, g:141, b:0 };
 
+pub static mut JIFFIES: u64 = 0;
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(u32)]
 pub enum QemuExitCode {

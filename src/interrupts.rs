@@ -1,7 +1,7 @@
 use x86_64::structures::idt::{InterruptDescriptorTable, InterruptStackFrame};
 use x86_64::instructions::port::Port;
 use crate::ioapic::init_io_apic;
-use crate::{println, print};
+use crate::{println, print, JIFFIES};
 use crate::lapic::{init_lapic,disable_pic_8259,EOI};
 
 // IRQ
@@ -61,9 +61,9 @@ extern "x86-interrupt" fn keyboard_interrupt_handler(_stack_frame: InterruptStac
 }
 
 extern "x86-interrupt" fn timer_interrupt_handler(_stack_frame: InterruptStackFrame) {
-    println!("Timer Interrupt");
-
     unsafe {
+        println!("Timer Interrupt: {} tick", JIFFIES);
+        JIFFIES += 1;   // 1 tick
         *(EOI as *mut u32) = 0;
     }
 }
