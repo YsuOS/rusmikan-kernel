@@ -11,6 +11,7 @@ mod interrupts;
 mod segment;
 mod paging;
 mod mm;
+mod lapic;
 
 use core::panic::PanicInfo;
 use core::arch::asm;

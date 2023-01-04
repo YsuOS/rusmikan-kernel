@@ -2,6 +2,7 @@ use x86_64::structures::idt::{InterruptDescriptorTable, InterruptStackFrame};
 use x86_64::instructions::port::Port;
 use crate::{println, print};
 use core::ptr;
+use crate::lapic::{init_lapic,disable_pic_8259,LAPIC,EOI};
 
 struct IoApic {
     ptr: *mut IoApicMmio,
@@ -45,14 +46,6 @@ const IRQ_KBD: u32 = 1;
 
 const REDTBL_MASKED: u32 = 0x00010000;
 
-// MMIO Address
-const LAPIC: u32 = 0xFEE00000;
-// LAPIC Register Address
-const SVR: u32 = LAPIC + 0x000000F0;
-const EOI: u32 = LAPIC + 0x000000B0;
-
-const SVR_ENABLED: u32 = 0x00000100;
-
 pub unsafe fn init() {
         init_idt();
         disable_pic_8259();
@@ -79,16 +72,6 @@ pub unsafe fn init_io_apic() {
     // Mark IRQ1 interrupt edge-triggered, active high, enable, and routed to the given cpunum
     ioapic.write(IOREDTBL+2*IRQ_KBD, IRQ_OFFSET as u32 + IRQ_KBD);
     ioapic.write(IOREDTBL+2*IRQ_KBD+1, lapic_id << 24);
-}
-
-unsafe fn init_lapic() {
-    let svr = SVR as *mut u32;
-    *svr = SVR_ENABLED | 0xFF;
-}
-
-unsafe fn disable_pic_8259() {
-    Port::new(0xa1).write(0xffu8);
-    Port::new(0x21).write(0xffu8);
 }
 
 #[derive(Debug, Clone, Copy)]
