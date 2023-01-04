@@ -23,6 +23,8 @@ use console::CONSOLE;
 use pci::list_pci_devices;
 use mm::{BitMapMemoryManager,BITMAP_MEMORY_MANAGER};
 
+use crate::lapic::{start_lapic_timer, stop_lapic_timer, lapic_timer_elapsed};
+
 const BG_COLOR: Rgb = Rgb { r: 241, g:141, b:0 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -69,21 +71,30 @@ pub extern "sysv64" fn kernel_main_new_stack (fb_config: &FrameBufferConfig, mem
 
     println!("This is Rusmikan");
     println!("1 + 2 = {}", 1 + 2);
-//    x86_64::instructions::interrupts::int3();
-
-    list_pci_devices();
-
-    let mm = memory_map.descriptors();
-    for d in mm {
-        println!("{:?}", d);
-    }
+    // x86_64::instructions::interrupts::int3();
 
     unsafe {
         let addr = BITMAP_MEMORY_MANAGER.allocate(4).unwrap();
         BITMAP_MEMORY_MANAGER.free(addr, 4);
     }
 
-    serial_println!("Serial Port Test");
+    unsafe {
+        for i in 0..25 {
+            start_lapic_timer();
+            print!("Line {} LAPIC Timer elapsed : ", i);
+            println!("{}", lapic_timer_elapsed());
+            stop_lapic_timer();
+        }
+    }
+
+    serial_println!("System Info");
+    list_pci_devices();
+
+    let mm = memory_map.descriptors();
+    for d in mm {
+        serial_println!("{:?}", d);
+    }
+
     // panic!();
     loop{
         unsafe {
@@ -94,16 +105,16 @@ pub extern "sysv64" fn kernel_main_new_stack (fb_config: &FrameBufferConfig, mem
 
 #[macro_export]
 macro_rules! print {
-        ($($arg:tt)*) => ($crate::_print(format_args!($($arg)*)));
+    ($($arg:tt)*) => ($crate::_print(format_args!($($arg)*)));
 }
 
 #[macro_export]
 macro_rules! println {
-        () => ($crate::print!("\n"));
-        ($($arg:tt)*) => ($crate::print!("{}\n", format_args!($($arg)*)));
+    () => ($crate::print!("\n"));
+    ($($arg:tt)*) => ($crate::print!("{}\n", format_args!($($arg)*)));
 }
 
 #[doc(hidden)]
 pub fn _print(args: core::fmt::Arguments) {
-        CONSOLE.lock().write_fmt(args).unwrap();
+    CONSOLE.lock().write_fmt(args).unwrap();
 }

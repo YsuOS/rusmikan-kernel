@@ -1,6 +1,6 @@
 use bit_field::BitField;
 use x86_64::instructions::port::Port;
-use crate::println;
+use crate::serial_println;
 use core::fmt::Display;
 
 const MAX_DEVICES: usize = 32;
@@ -163,7 +163,7 @@ pub fn list_pci_devices() {
     for i in 0..pci_devices.count {
         let dev = pci_devices.devices[i];
         let class_code = dev.read_class_code();
-        println!("{}:{}.{} vend {:04x}, class {}, head {:02x}",
+        serial_println!("{}:{}.{} vend {:04x}, class {}, head {:02x}",
             dev.bus, dev.device, dev.function, dev.read_vendor_id(), 
             class_code, dev.read_header_type());
     }
