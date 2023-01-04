@@ -78,14 +78,14 @@ pub extern "sysv64" fn kernel_main_new_stack (fb_config: &FrameBufferConfig, mem
         BITMAP_MEMORY_MANAGER.free(addr, 4);
     }
 
-    unsafe {
-        for i in 0..25 {
-            start_lapic_timer();
-            print!("Line {} LAPIC Timer elapsed : ", i);
-            println!("{}", lapic_timer_elapsed());
-            stop_lapic_timer();
-        }
-    }
+    //unsafe {
+    //    for i in 0..25 {
+    //        start_lapic_timer();
+    //        print!("Line {} LAPIC Timer elapsed : ", i);
+    //        println!("{}", lapic_timer_elapsed());
+    //        stop_lapic_timer();
+    //    }
+    //}
 
     serial_println!("System Info");
     list_pci_devices();

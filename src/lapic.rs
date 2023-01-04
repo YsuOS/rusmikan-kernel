@@ -1,6 +1,8 @@
 use core::ptr;
 use x86_64::instructions::port::Port;
 
+use crate::interrupts::{IRQ_TMR, IRQ_OFFSET};
+
 // MMIO Address
 pub const LAPIC: u32 = 0xFEE00000;
 // LAPIC Register Address
@@ -14,7 +16,7 @@ const TMRDIV: u32 = LAPIC + 0x000003e0;
 const SVR_ENABLED: u32 = 0x00000100;
 const X1: u32 = 0b1011;   // divided by 1 (Divide Configuration Register)
 const LVT_MASKED: u32 = 0x00010000;
-//const LVT_PERIODIC: u32 = 0x00020000;   // ONE_SHOT = 0x00
+const LVT_PERIODIC: u32 = 0x00020000;   // ONE_SHOT = 0x00
 
 pub unsafe fn init_lapic() {
     let svr = SVR as *mut u32;
@@ -31,8 +33,10 @@ pub unsafe fn disable_pic_8259() {
 unsafe fn init_lapic_timer() {
     let lvt_timer = LVT_TMR as *mut u32;
     let timer_div = TMRDIV as *mut u32;
+    let timer_init_cnt = TMRINITCNT as *mut u32;
     *timer_div = X1;
-    *lvt_timer = LVT_MASKED;
+    *lvt_timer = LVT_PERIODIC|(IRQ_OFFSET as u32 + IRQ_TMR);
+    ptr::write_volatile(timer_init_cnt, u32::MAX);
 }
 
 pub unsafe fn start_lapic_timer() {

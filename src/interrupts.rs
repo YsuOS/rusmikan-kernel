@@ -6,6 +6,7 @@ use crate::lapic::{init_lapic,disable_pic_8259,EOI};
 
 // IRQ
 pub const IRQ_OFFSET: u8 = 32;   // first 32 entries are reserved for exception by CPU
+pub const IRQ_TMR: u32 = 0;
 pub const IRQ_KBD: u32 = 1;
 
 pub unsafe fn init() {
@@ -19,7 +20,7 @@ pub unsafe fn init() {
 #[derive(Debug, Clone, Copy)]
 #[repr(u8)]
 enum InterruptIndex {
-    _Timer = IRQ_OFFSET,
+    Timer = IRQ_OFFSET,
     Keyboard,
 }
 
@@ -27,6 +28,8 @@ static mut IDT: InterruptDescriptorTable = InterruptDescriptorTable::new();
 
 unsafe fn init_idt(){
     IDT.breakpoint.set_handler_fn(breakpoint_handler);
+    IDT[InterruptIndex::Timer as usize]
+        .set_handler_fn(timer_interrupt_handler);
     IDT[InterruptIndex::Keyboard as usize]
         .set_handler_fn(keyboard_interrupt_handler);
     IDT.load();
@@ -57,3 +60,10 @@ extern "x86-interrupt" fn keyboard_interrupt_handler(_stack_frame: InterruptStac
 
 }
 
+extern "x86-interrupt" fn timer_interrupt_handler(_stack_frame: InterruptStackFrame) {
+    println!("Timer Interrupt");
+
+    unsafe {
+        *(EOI as *mut u32) = 0;
+    }
+}
