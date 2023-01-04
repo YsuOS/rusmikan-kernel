@@ -12,6 +12,7 @@ mod segment;
 mod paging;
 mod mm;
 mod lapic;
+mod ioapic;
 
 use core::panic::PanicInfo;
 use core::arch::asm;
