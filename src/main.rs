@@ -62,7 +62,7 @@ struct KernelMainStack([u8; 1024 * 1024]);
 static mut KERNEL_MAIN_STACK: KernelMainStack = KernelMainStack([0; 1024 * 1024]);
 
 #[no_mangle]
-pub extern "sysv64" fn kernel_main_new_stack (fb_config: &FrameBufferConfig, memory_map: &MemoryMap) -> ! {
+pub extern "sysv64" fn kernel_main_new_stack (fb_config: &FrameBufferConfig, memory_map: &MemoryMap, rsdp: u64) -> ! {
     let graphic = unsafe { Graphic::init(*fb_config) };
     graphic.clear();
 
@@ -97,6 +97,7 @@ pub extern "sysv64" fn kernel_main_new_stack (fb_config: &FrameBufferConfig, mem
         serial_println!("{:?}", d);
     }
 
+    serial_println!("RSDP: {}", rsdp);
     // panic!();
     loop{
         unsafe {
