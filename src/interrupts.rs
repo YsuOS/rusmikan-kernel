@@ -1,7 +1,7 @@
 use x86_64::structures::idt::{InterruptDescriptorTable, InterruptStackFrame};
 use x86_64::instructions::port::Port;
 use crate::ioapic::init_io_apic;
-use crate::{println, print, JIFFIES};
+use crate::{print, println, JIFFIES, serial_println};
 use crate::lapic::{init_lapic,disable_pic_8259,EOI};
 
 // IRQ
@@ -36,7 +36,7 @@ unsafe fn init_idt(){
 }
 
 extern "x86-interrupt" fn breakpoint_handler(stack_frame: InterruptStackFrame) {
-    println!("EXCEPTION: BREAKPOINT\n{:#?}", stack_frame);
+    serial_println!("EXCEPTION: BREAKPOINT\n{:#?}", stack_frame);
 }
 
 extern "x86-interrupt" fn keyboard_interrupt_handler(_stack_frame: InterruptStackFrame) {
@@ -62,8 +62,8 @@ extern "x86-interrupt" fn keyboard_interrupt_handler(_stack_frame: InterruptStac
 
 extern "x86-interrupt" fn timer_interrupt_handler(_stack_frame: InterruptStackFrame) {
     unsafe {
-        println!("Timer Interrupt: {} tick", JIFFIES);
         JIFFIES += 1;   // 1 tick
+        println!("Timer Interrupt: {} tick", JIFFIES);
         *(EOI as *mut u32) = 0;
     }
 }

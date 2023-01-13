@@ -70,8 +70,8 @@ pub extern "sysv64" fn kernel_main_new_stack (fb_config: &FrameBufferConfig, mem
     unsafe { segment::init() };
     unsafe { BitMapMemoryManager::init(memory_map) };
     unsafe { paging::init() };
-    unsafe { interrupts::init() };
     unsafe { acpi::init_rsdp(rsdp) };
+    unsafe { interrupts::init() };
 
     println!("This is Rusmikan");
     println!("1 + 2 = {}", 1 + 2);
