@@ -85,6 +85,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "rsdp"
+version = "2.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "66d3add2fc55ef37511bcf81a08ee7a09eff07b23aae38b06a29024a38c604b1"
+dependencies = [
+ "log",
+]
+
+[[package]]
 name = "rusmikan"
 version = "0.1.0"
 dependencies = [
@@ -99,6 +108,7 @@ dependencies = [
  "bit_field",
  "lazy_static",
  "pc-keyboard",
+ "rsdp",
  "rusmikan",
  "spin 0.9.4",
  "uart_16550",

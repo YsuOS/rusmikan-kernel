@@ -13,6 +13,7 @@ mod paging;
 mod mm;
 mod lapic;
 mod ioapic;
+mod acpi;
 
 use core::panic::PanicInfo;
 use core::arch::asm;
@@ -22,7 +23,6 @@ use core::fmt::Write;
 use console::CONSOLE;
 use pci::list_pci_devices;
 use mm::{BitMapMemoryManager,BITMAP_MEMORY_MANAGER};
-
 use crate::lapic::{start_lapic_timer, stop_lapic_timer, lapic_timer_elapsed};
 
 const BG_COLOR: Rgb = Rgb { r: 241, g:141, b:0 };
@@ -63,6 +63,7 @@ static mut KERNEL_MAIN_STACK: KernelMainStack = KernelMainStack([0; 1024 * 1024]
 
 #[no_mangle]
 pub extern "sysv64" fn kernel_main_new_stack (fb_config: &FrameBufferConfig, memory_map: &MemoryMap, rsdp: u64) -> ! {
+    serial_println!("System Info");
     let graphic = unsafe { Graphic::init(*fb_config) };
     graphic.clear();
 
@@ -70,6 +71,7 @@ pub extern "sysv64" fn kernel_main_new_stack (fb_config: &FrameBufferConfig, mem
     unsafe { BitMapMemoryManager::init(memory_map) };
     unsafe { paging::init() };
     unsafe { interrupts::init() };
+    unsafe { acpi::init_rsdp(rsdp) };
 
     println!("This is Rusmikan");
     println!("1 + 2 = {}", 1 + 2);
@@ -89,7 +91,6 @@ pub extern "sysv64" fn kernel_main_new_stack (fb_config: &FrameBufferConfig, mem
     //    }
     //}
 
-    serial_println!("System Info");
     list_pci_devices();
 
     let mm = memory_map.descriptors();
@@ -97,7 +98,6 @@ pub extern "sysv64" fn kernel_main_new_stack (fb_config: &FrameBufferConfig, mem
         serial_println!("{:?}", d);
     }
 
-    serial_println!("RSDP: {}", rsdp);
     // panic!();
     loop{
         unsafe {
