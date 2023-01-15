@@ -19,11 +19,14 @@ use core::panic::PanicInfo;
 use core::arch::asm;
 use rusmikan::{FrameBufferConfig,MemoryMap};
 use graphics::{Graphic, Rgb};
+use x86_64::{VirtAddr, structures::paging::PageTable};
 use core::fmt::Write;
 use console::CONSOLE;
 use pci::list_pci_devices;
 use mm::{BitMapMemoryManager,BITMAP_MEMORY_MANAGER};
-use crate::lapic::{start_lapic_timer, stop_lapic_timer, lapic_timer_elapsed};
+use paging::active_level_4_table;
+
+use crate::paging::translate_addr;
 
 const BG_COLOR: Rgb = Rgb { r: 241, g:141, b:0 };
 
@@ -95,7 +98,34 @@ pub extern "sysv64" fn kernel_main_new_stack (fb_config: &FrameBufferConfig, mem
 
     let mm = memory_map.descriptors();
     for d in mm {
-        serial_println!("{:?}", d);
+        serial_println!("{:x?}", d);
+    }
+
+    let phys_mem_offset = VirtAddr::new(0);
+    let l4_table = unsafe { active_level_4_table(phys_mem_offset) };
+
+//    for (i,entry) in l4_table.iter().enumerate() {
+//        if !entry.is_unused() {
+//            serial_println!("L4 Entry {}: {:?}", i, entry);
+//
+//            let phys = entry.frame().unwrap().start_address();
+//            let virt = phys.as_u64() + phys_mem_offset.as_u64();
+//            let ptr = VirtAddr::new(virt).as_mut_ptr();
+//            let l3_table: &PageTable = unsafe { &*ptr };
+//        }
+//    }
+
+    let addresses = [
+        0xb8000,
+        0x118000,
+        0x201008,
+        0x0100_0020_1a10,
+    ];
+
+    for &address in &addresses {
+        let virt = VirtAddr::new(address);
+        let phys = unsafe { translate_addr(virt, phys_mem_offset) };
+        serial_println!("{:?} -> {:?}", virt, phys);
     }
 
     // panic!();
