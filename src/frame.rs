@@ -1,21 +1,23 @@
 use rusmikan::MemoryMap;
 use core::mem;
+use x86_64::structures::paging::{Size4KiB, FrameAllocator, PhysFrame};
+use x86_64::PhysAddr;
 
 const MAX_PHYSICAL_MEMORY_BYTES: usize = 128 * 1024 * 1024 * 1024;
 const FRAME_BYTES: usize = 4096;
 const FRAME_COUNTS: usize = MAX_PHYSICAL_MEMORY_BYTES / FRAME_BYTES;
 const BITS_PER_MAP_LINE: usize = 8 * mem::size_of::<usize>();
 
-pub static mut BITMAP_MEMORY_MANAGER: BitMapMemoryManager = BitMapMemoryManager::new();
+pub static mut BITMAP_FRAME_MANAGER: BitMapFrameManager = BitMapFrameManager::new();
 
 #[derive(Debug)]
-pub struct BitMapMemoryManager {
+pub struct BitMapFrameManager {
     alloc_map: [usize; FRAME_COUNTS / BITS_PER_MAP_LINE],
     begin: usize,
     end: usize,
 }
 
-impl BitMapMemoryManager {
+impl BitMapFrameManager {
     const fn new() -> Self {
         Self {
             alloc_map: [0; FRAME_COUNTS / BITS_PER_MAP_LINE],
@@ -88,6 +90,15 @@ impl BitMapMemoryManager {
     pub fn free(&mut self, frame: usize, num_frames: usize) {
         for i in 0..num_frames {
             self.set_bit(frame + i, false);
+        }
+    }
+}
+
+unsafe impl FrameAllocator<Size4KiB> for BitMapFrameManager {
+    fn allocate_frame(&mut self) -> Option<PhysFrame<Size4KiB>> {
+        match self.allocate(1) {
+            Some(frame) => Some(PhysFrame::from_start_address(PhysAddr::new(frame as u64)).unwrap()),
+            None => None,
         }
     }
 }

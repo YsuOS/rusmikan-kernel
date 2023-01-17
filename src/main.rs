@@ -10,7 +10,7 @@ mod serial;
 mod interrupts;
 mod segment;
 mod paging;
-mod mm;
+mod frame;
 mod lapic;
 mod ioapic;
 mod acpi;
@@ -19,14 +19,14 @@ use core::panic::PanicInfo;
 use core::arch::asm;
 use rusmikan::{FrameBufferConfig,MemoryMap};
 use graphics::{Graphic, Rgb};
-use x86_64::{VirtAddr, structures::paging::PageTable};
+use x86_64::{VirtAddr, structures::paging::{PageTable, OffsetPageTable}};
 use core::fmt::Write;
 use console::CONSOLE;
 use pci::list_pci_devices;
-use mm::{BitMapMemoryManager,BITMAP_MEMORY_MANAGER};
-use paging::active_level_4_table;
+use frame::{BitMapFrameManager,BITMAP_FRAME_MANAGER};
 
-use crate::paging::translate_addr;
+use crate::paging::active_level_4_table;
+use x86_64::structures::paging::Translate;
 
 const BG_COLOR: Rgb = Rgb { r: 241, g:141, b:0 };
 
@@ -58,6 +58,7 @@ fn panic(info: &PanicInfo) -> ! {
     }
 }
 
+#[derive(Debug)]
 #[repr(align(16))]
 struct KernelMainStack([u8; 1024 * 1024]);
 
@@ -71,7 +72,7 @@ pub extern "sysv64" fn kernel_main_new_stack (fb_config: &FrameBufferConfig, mem
     graphic.clear();
 
     unsafe { segment::init() };
-    unsafe { BitMapMemoryManager::init(memory_map) };
+    unsafe { BitMapFrameManager::init(memory_map) };
     unsafe { paging::init() };
     unsafe { acpi::init_rsdp(rsdp) };
     unsafe { interrupts::init() };
@@ -80,10 +81,10 @@ pub extern "sysv64" fn kernel_main_new_stack (fb_config: &FrameBufferConfig, mem
     println!("1 + 2 = {}", 1 + 2);
     // x86_64::instructions::interrupts::int3();
 
-    unsafe {
-        let addr = BITMAP_MEMORY_MANAGER.allocate(4).unwrap();
-        BITMAP_MEMORY_MANAGER.free(addr, 4);
-    }
+//    unsafe {
+//        let addr = BITMAP_MEMORY_MANAGER.allocate(4).unwrap();
+//        BITMAP_MEMORY_MANAGER.free(addr, 4);
+//    }
 
     //unsafe {
     //    for i in 0..25 {
@@ -100,9 +101,10 @@ pub extern "sysv64" fn kernel_main_new_stack (fb_config: &FrameBufferConfig, mem
     for d in mm {
         serial_println!("{:x?}", d);
     }
-
     let phys_mem_offset = VirtAddr::new(0);
     let l4_table = unsafe { active_level_4_table(phys_mem_offset) };
+    let mapper = unsafe { OffsetPageTable::new(l4_table, phys_mem_offset) };
+    let mut frame_allocator = unsafe { &BITMAP_FRAME_MANAGER };
 
 //    for (i,entry) in l4_table.iter().enumerate() {
 //        if !entry.is_unused() {
@@ -112,19 +114,18 @@ pub extern "sysv64" fn kernel_main_new_stack (fb_config: &FrameBufferConfig, mem
 //            let virt = phys.as_u64() + phys_mem_offset.as_u64();
 //            let ptr = VirtAddr::new(virt).as_mut_ptr();
 //            let l3_table: &PageTable = unsafe { &*ptr };
-//        }
+//       }
 //    }
 
     let addresses = [
         0xb8000,
-        0x118000,
         0x201008,
         0x0100_0020_1a10,
     ];
-
+ 
     for &address in &addresses {
         let virt = VirtAddr::new(address);
-        let phys = unsafe { translate_addr(virt, phys_mem_offset) };
+        let phys = mapper.translate_addr(virt);
         serial_println!("{:?} -> {:?}", virt, phys);
     }
 

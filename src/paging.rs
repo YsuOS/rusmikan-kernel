@@ -50,27 +50,3 @@ pub unsafe fn active_level_4_table(physical_memory_offset: VirtAddr) -> &'static
 
     &mut *page_table_ptr
 }
-
-pub fn translate_addr(addr: VirtAddr, physical_memory_offset: VirtAddr) -> Option<PhysAddr> {
-    let (level_4_table_frame,_) = Cr3::read();
-
-    let table_indexes = [
-        addr.p4_index(), addr.p3_index(), addr.p2_index()
-    ];
-    let mut frame = level_4_table_frame;
-
-    for &index in &table_indexes {
-        let virt = physical_memory_offset + frame.start_address().as_u64();
-        let table_ptr: *const PageTable = virt.as_ptr();
-        let table = unsafe {&*table_ptr};
-
-        let entry = &table[index];
-
-        if !entry.flags().contains(PageTableFlags::PRESENT) {
-            return None;
-        }
-        frame = PhysFrame::containing_address(entry.addr());
-    }
-
-    Some(frame.start_address() + u64::from(addr.page_offset()))
-}
