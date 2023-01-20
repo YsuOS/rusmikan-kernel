@@ -1,6 +1,9 @@
 #![no_std]
 #![no_main]
 #![feature(abi_x86_interrupt)]
+#![feature(alloc_error_handler)]
+#![feature(const_mut_refs)]
+#![feature(pointer_is_aligned)]
 
 mod graphics;
 mod ascii_font;
@@ -14,9 +17,11 @@ mod frame;
 mod lapic;
 mod ioapic;
 mod acpi;
+mod allocator;
 
 use core::panic::PanicInfo;
 use core::arch::asm;
+use alloc::boxed::Box;
 use rusmikan::{FrameBufferConfig,MemoryMap};
 use graphics::{Graphic, Rgb};
 use x86_64::{VirtAddr, structures::paging::{PageTable, OffsetPageTable}};
@@ -25,8 +30,10 @@ use console::CONSOLE;
 use pci::list_pci_devices;
 use frame::{BitMapFrameManager,BITMAP_FRAME_MANAGER};
 
-use crate::paging::active_level_4_table;
+use crate::{paging::active_level_4_table, allocator::ALLOCATOR};
 use x86_64::structures::paging::Translate;
+
+extern crate alloc;
 
 const BG_COLOR: Rgb = Rgb { r: 241, g:141, b:0 };
 
@@ -45,6 +52,11 @@ pub fn exit_qemu(exit_code: QemuExitCode) {
         let mut port = Port::new(0xf4);
         port.write(exit_code as u32);
     }
+}
+
+#[alloc_error_handler]
+fn alloc_error_handler(layout: alloc::alloc::Layout) -> ! {
+    panic!("allocation error: {:?}", layout);
 }
 
 #[panic_handler]
@@ -82,8 +94,8 @@ pub extern "sysv64" fn kernel_main_new_stack (fb_config: &FrameBufferConfig, mem
     // x86_64::instructions::interrupts::int3();
 
 //    unsafe {
-//        let addr = BITMAP_MEMORY_MANAGER.allocate(4).unwrap();
-//        BITMAP_MEMORY_MANAGER.free(addr, 4);
+//        let addr = BITMAP_FRAME_MANAGER.allocate(4).unwrap();
+//        BITMAP_FRAME_MANAGER.free(addr, 4);
 //    }
 
     //unsafe {
@@ -104,7 +116,6 @@ pub extern "sysv64" fn kernel_main_new_stack (fb_config: &FrameBufferConfig, mem
     let phys_mem_offset = VirtAddr::new(0);
     let l4_table = unsafe { active_level_4_table(phys_mem_offset) };
     let mapper = unsafe { OffsetPageTable::new(l4_table, phys_mem_offset) };
-    let mut frame_allocator = unsafe { &BITMAP_FRAME_MANAGER };
 
 //    for (i,entry) in l4_table.iter().enumerate() {
 //        if !entry.is_unused() {
@@ -118,15 +129,28 @@ pub extern "sysv64" fn kernel_main_new_stack (fb_config: &FrameBufferConfig, mem
 //    }
 
     let addresses = [
+        0x0,
         0xb8000,
         0x201008,
-        0x0100_0020_1a10,
     ];
  
     for &address in &addresses {
         let virt = VirtAddr::new(address);
         let phys = mapper.translate_addr(virt);
         serial_println!("{:?} -> {:?}", virt, phys);
+    }
+
+    { 
+        let x = Box::new(40); 
+        let y = Box::new(41); 
+        serial_println!("{:p}", x);
+        serial_println!("{:p}", y);
+    }
+    { 
+        let x = Box::new(42); 
+        serial_println!("{:p}", x);
+        let y = Box::new(43); 
+        serial_println!("{:p}", y);
     }
 
     // panic!();

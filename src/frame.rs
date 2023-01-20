@@ -3,14 +3,17 @@ use core::mem;
 use x86_64::structures::paging::{Size4KiB, FrameAllocator, PhysFrame};
 use x86_64::PhysAddr;
 
+use crate::serial_println;
+
 const MAX_PHYSICAL_MEMORY_BYTES: usize = 128 * 1024 * 1024 * 1024;
-const FRAME_BYTES: usize = 4096;
+pub const FRAME_BYTES: usize = 4096;
 const FRAME_COUNTS: usize = MAX_PHYSICAL_MEMORY_BYTES / FRAME_BYTES;
 const BITS_PER_MAP_LINE: usize = 8 * mem::size_of::<usize>();
+const FRAME_MIN: usize = 1; // FIXME: 0 causes alloc error
 
 pub static mut BITMAP_FRAME_MANAGER: BitMapFrameManager = BitMapFrameManager::new();
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub struct BitMapFrameManager {
     alloc_map: [usize; FRAME_COUNTS / BITS_PER_MAP_LINE],
     begin: usize,
@@ -21,24 +24,24 @@ impl BitMapFrameManager {
     const fn new() -> Self {
         Self {
             alloc_map: [0; FRAME_COUNTS / BITS_PER_MAP_LINE],
-            begin: 0,
+            begin: FRAME_MIN,
             end: FRAME_COUNTS,
         }
     }
 
     pub unsafe fn init(mm: &MemoryMap) {
-        let mut available_end: usize = 0;
+        let mut available_end: usize = FRAME_MIN;
         for d in mm.descriptors() {
             let phys_start = d.phys_start as usize;
             let phys_end = d.phys_end as usize;
             if available_end < phys_start {
                 let frame_id = available_end / FRAME_BYTES;
                 let frame_num = (phys_start - available_end) / FRAME_BYTES;
-                BITMAP_MEMORY_MANAGER.mark_allocated(frame_id, frame_num);
+                BITMAP_FRAME_MANAGER.mark_allocated(frame_id, frame_num);
             }
             available_end = phys_end;
         }
-        BITMAP_MEMORY_MANAGER.end = available_end;
+        BITMAP_FRAME_MANAGER.end = available_end / FRAME_BYTES;
     }
 
     fn mark_allocated(&mut self, start_frame_id: usize, frame_num: usize) {
@@ -94,11 +97,11 @@ impl BitMapFrameManager {
     }
 }
 
-unsafe impl FrameAllocator<Size4KiB> for BitMapFrameManager {
-    fn allocate_frame(&mut self) -> Option<PhysFrame<Size4KiB>> {
-        match self.allocate(1) {
-            Some(frame) => Some(PhysFrame::from_start_address(PhysAddr::new(frame as u64)).unwrap()),
-            None => None,
-        }
-    }
-}
+//unsafe impl FrameAllocator<Size4KiB> for BitMapFrameManager {
+//    fn allocate_frame(&mut self) -> Option<PhysFrame<Size4KiB>> {
+//        match self.allocate(1) {
+//            Some(frame) => Some(PhysFrame::from_start_address(PhysAddr::new(frame as u64)).unwrap()),
+//            None => None,
+//        }
+//    }
+//}
