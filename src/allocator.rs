@@ -1,7 +1,7 @@
 use core::{alloc::{Layout, GlobalAlloc}, mem};
 use x86_64::VirtAddr;
 
-use crate::{serial_println, frame::{FRAME_BYTES, BITMAP_FRAME_MANAGER}};
+use crate::{serial_println, frame::{FRAME_BYTES, BITMAP_FRAME_MANAGER}, panic};
 use core::ptr;
 
 #[global_allocator]
@@ -58,6 +58,7 @@ unsafe impl GlobalAlloc for Locked<KernelAllocator> {
         let mut allocator = self.lock();
         match list_index(&layout) {
             Some(index) => {
+                serial_println!("DEBUG: alloc size: {:?}", BLOCK_SIZES[index]);
                 match allocator.list_heads[index].take() {
                     Some(node) => {
                         allocator.list_heads[index] = node.next.take();
@@ -69,8 +70,16 @@ unsafe impl GlobalAlloc for Locked<KernelAllocator> {
                     }
                 }},
             None => { 
-                    serial_println!("No index");
-                    todo!() 
+                // TODO: support > 4096 size allocation
+                serial_println!("No index. allocate frame {:?}", layout.size());
+                if layout.size() == FRAME_BYTES {
+                    match BITMAP_FRAME_MANAGER.allocate(layout.size() / FRAME_BYTES) {
+                        Some(frame) => VirtAddr::new((frame*FRAME_BYTES) as u64).as_u64() as *mut u8,
+                        None => panic!("Out Of Memory"),
+                    }
+                } else {
+                    panic!("heap allocation over 4 KiB is not supported!");
+                }
             },
         }
     }
@@ -87,7 +96,10 @@ unsafe impl GlobalAlloc for Locked<KernelAllocator> {
                 new_node_ptr.write(new_node);
                 allocator.list_heads[index] = Some(&mut *new_node_ptr);
             },
-            None => { todo!() },
+            None => {
+                // TODO: support > 4096 size allocation
+                BITMAP_FRAME_MANAGER.free(ptr as usize / FRAME_BYTES, 1);
+            },
         }
     }
 

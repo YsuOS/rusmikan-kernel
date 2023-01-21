@@ -21,7 +21,7 @@ mod allocator;
 
 use core::panic::PanicInfo;
 use core::arch::asm;
-use alloc::boxed::Box;
+use alloc::{boxed::Box, vec::Vec};
 use rusmikan::{FrameBufferConfig,MemoryMap};
 use graphics::{Graphic, Rgb};
 use x86_64::{VirtAddr, structures::paging::{PageTable, OffsetPageTable}};
@@ -93,20 +93,6 @@ pub extern "sysv64" fn kernel_main_new_stack (fb_config: &FrameBufferConfig, mem
     println!("1 + 2 = {}", 1 + 2);
     // x86_64::instructions::interrupts::int3();
 
-//    unsafe {
-//        let addr = BITMAP_FRAME_MANAGER.allocate(4).unwrap();
-//        BITMAP_FRAME_MANAGER.free(addr, 4);
-//    }
-
-    //unsafe {
-    //    for i in 0..25 {
-    //        start_lapic_timer();
-    //        print!("Line {} LAPIC Timer elapsed : ", i);
-    //        println!("{}", lapic_timer_elapsed());
-    //        stop_lapic_timer();
-    //    }
-    //}
-
     list_pci_devices();
 
     let mm = memory_map.descriptors();
@@ -140,18 +126,24 @@ pub extern "sysv64" fn kernel_main_new_stack (fb_config: &FrameBufferConfig, mem
         serial_println!("{:?} -> {:?}", virt, phys);
     }
 
-    { 
-        let x = Box::new(40); 
-        let y = Box::new(41); 
+    {
+        let mut vec: Vec<u32> = Vec::new();
+        vec.push(1);
+        vec.push(2);
+    }
+
+    {
+        let x = Box::new([0u8; 1024]);
+        let y = Box::new([0u8; 4096]);
+        let z = Box::new([0u8; 1024]);
         serial_println!("{:p}", x);
         serial_println!("{:p}", y);
+        serial_println!("{:p}", z);
     }
-    { 
-        let x = Box::new(42); 
-        serial_println!("{:p}", x);
-        let y = Box::new(43); 
-        serial_println!("{:p}", y);
-    }
+
+    //{
+    //    let x = Box::new([0u8; 8192]);
+    //}
 
     // panic!();
     loop{
