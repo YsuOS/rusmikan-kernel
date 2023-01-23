@@ -1,12 +1,8 @@
 use core::mem;
 use rusmikan::MemoryMap;
-use x86_64::structures::paging::{FrameAllocator, PhysFrame, Size4KiB};
-use x86_64::PhysAddr;
 
-use crate::serial_println;
-
-const MAX_PHYSICAL_MEMORY_BYTES: usize = 128 * 1024 * 1024 * 1024;
 pub const FRAME_BYTES: usize = 4096;
+const MAX_PHYSICAL_MEMORY_BYTES: usize = 128 * 1024 * 1024 * 1024;
 const FRAME_COUNTS: usize = MAX_PHYSICAL_MEMORY_BYTES / FRAME_BYTES;
 const BITS_PER_MAP_LINE: usize = 8 * mem::size_of::<usize>();
 const FRAME_MIN: usize = 1; // FIXME: 0 causes alloc error

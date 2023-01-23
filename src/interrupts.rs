@@ -1,8 +1,12 @@
-use crate::ioapic::init_io_apic;
-use crate::lapic::{disable_pic_8259, init_lapic, EOI};
-use crate::{print, println, segment, serial_println, JIFFIES};
-use x86_64::instructions::port::Port;
-use x86_64::structures::idt::{InterruptDescriptorTable, InterruptStackFrame};
+use crate::{
+    ioapic::init_io_apic,
+    lapic::{disable_pic_8259, init_lapic, EOI},
+    print, println, segment, serial_println, JIFFIES,
+};
+use x86_64::{
+    instructions::port::Port,
+    structures::idt::{InterruptDescriptorTable, InterruptStackFrame},
+};
 
 // IRQ
 pub const IRQ_OFFSET: u8 = 32; // first 32 entries are reserved for exception by CPU

@@ -1,5 +1,4 @@
-use crate::ascii_font::FONTS;
-use crate::BG_COLOR;
+use crate::{ascii_font::FONTS, BG_COLOR};
 use rusmikan::{FrameBuffer, FrameBufferConfig};
 
 #[derive(Copy, Clone)]
@@ -22,7 +21,7 @@ impl Graphic {
         GRAPHIC.as_mut().unwrap()
     }
 
-    pub fn new(fb_config: FrameBufferConfig) -> Self {
+    fn new(fb_config: FrameBufferConfig) -> Self {
         unsafe fn write_pixel_rgb(fb: &mut FrameBuffer, base: usize, rgb: Rgb) {
             fb.write_value(base, [rgb.r, rgb.g, rgb.b]);
         }
@@ -39,7 +38,7 @@ impl Graphic {
         }
     }
 
-    pub fn write(&mut self, x: usize, y: usize, rgb: Rgb) {
+    fn write(&mut self, x: usize, y: usize, rgb: Rgb) {
         let pixels_per_scan_line = self.fb_config.pixels_per_scan_line;
         let fb = &mut self.fb_config.frame_buffer;
         unsafe {

@@ -5,7 +5,7 @@ use rsdp;
 use x86_64::instructions::port::Port;
 
 const PMTIMER_FREQ: usize = 3579545;
-pub static mut FADT_ADDR: u64 = 0;
+static mut FADT_ADDR: u64 = 0;
 
 // FIXME: want to use acpi crate with alloc
 struct Rsdp {
@@ -34,20 +34,20 @@ const FADT: [u8; 4] = *b"FACP";
 // https://docs.rs/acpi/latest/src/acpi/sdt.rs.html#100-110
 // 36 bytes
 #[repr(C, packed)]
-pub struct SdtHeader {
-    pub signature: [u8; 4],
-    pub length: u32,
-    pub revision: u8,
-    pub checksum: u8,
-    pub oem_id: [u8; 6],
-    pub oem_table_id: [u8; 8],
-    pub oem_revision: u32,
-    pub creator_id: u32,
-    pub creator_revision: u32,
+struct SdtHeader {
+    signature: [u8; 4],
+    length: u32,
+    revision: u8,
+    checksum: u8,
+    oem_id: [u8; 6],
+    oem_table_id: [u8; 8],
+    oem_revision: u32,
+    creator_id: u32,
+    creator_revision: u32,
 }
 
 #[derive(Clone, Copy)]
-pub struct Flags(u32);
+struct Flags(u32);
 
 impl Flags {
     pub fn pm_timer_is_32_bit(&self) -> bool {
@@ -58,7 +58,7 @@ impl Flags {
 // https://docs.rs/acpi/latest/src/acpi/fadt.rs.html#31-115
 // 276 bytes
 #[repr(C, packed)]
-pub struct Fadt {
+struct Fadt {
     header: SdtHeader,
 
     _reserved: [u8; 40], // mask un-used members
@@ -67,7 +67,7 @@ pub struct Fadt {
 
     _reserved1: [u8; 32], // mask un-used members
 
-    pub flags: Flags,
+    flags: Flags,
 
     _reserved2: [u8; 160], // mask un-used members
 }

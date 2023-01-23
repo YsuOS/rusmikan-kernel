@@ -1,14 +1,12 @@
-use core::{
-    alloc::{GlobalAlloc, Layout},
-    mem,
-};
-use x86_64::VirtAddr;
-
 use crate::{
     frame::{BITMAP_FRAME_MANAGER, FRAME_BYTES},
-    panic, serial_println,
+    serial_println,
 };
-use core::ptr;
+use core::{
+    alloc::{GlobalAlloc, Layout},
+    ptr,
+};
+use x86_64::VirtAddr;
 
 #[global_allocator]
 pub static ALLOCATOR: Locked<KernelAllocator> = Locked::new(KernelAllocator::new());
@@ -26,7 +24,7 @@ pub struct KernelAllocator {
 }
 
 impl KernelAllocator {
-    pub const fn new() -> Self {
+    const fn new() -> Self {
         const EMPTY: Option<&'static mut ListNode> = None;
         KernelAllocator {
             list_heads: [EMPTY; BLOCK_SIZES.len()],
@@ -118,13 +116,13 @@ pub struct Locked<A> {
 }
 
 impl<A> Locked<A> {
-    pub const fn new(inner: A) -> Self {
+    const fn new(inner: A) -> Self {
         Locked {
             inner: spin::Mutex::new(inner),
         }
     }
 
-    pub fn lock(&self) -> spin::MutexGuard<A> {
+    fn lock(&self) -> spin::MutexGuard<A> {
         self.inner.lock()
     }
 }

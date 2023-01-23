@@ -1,8 +1,9 @@
-use crate::acpi::wait_milliseconds_with_pm_timer;
+use crate::{
+    acpi::wait_milliseconds_with_pm_timer,
+    interrupts::{IRQ_OFFSET, IRQ_TMR},
+};
 use core::ptr;
 use x86_64::instructions::port::Port;
-
-use crate::interrupts::{IRQ_OFFSET, IRQ_TMR};
 
 // MMIO Address
 pub const LAPIC: u32 = 0xFEE00000;
@@ -51,17 +52,17 @@ unsafe fn init_lapic_timer() {
     ptr::write_volatile(timer_init_cnt, LAPIC_TMR_FREQ / 100);
 }
 
-pub unsafe fn start_lapic_timer() {
+unsafe fn start_lapic_timer() {
     let timer_init_cnt = TMRINITCNT as *mut u32;
     ptr::write_volatile(timer_init_cnt, u32::MAX);
 }
 
-pub unsafe fn stop_lapic_timer() {
+unsafe fn stop_lapic_timer() {
     let timer_init_cnt = TMRINITCNT as *mut u32;
     ptr::write_volatile(timer_init_cnt, 0);
 }
 
-pub unsafe fn lapic_timer_elapsed() -> u32 {
+unsafe fn lapic_timer_elapsed() -> u32 {
     let timer_current_cnt = TMRCURRCNT as *mut u32;
     u32::MAX - ptr::read_volatile(timer_current_cnt)
 }

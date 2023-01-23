@@ -1,9 +1,13 @@
-use x86_64::addr::{PhysAddr, VirtAddr};
-use x86_64::registers::control::{Cr3, Cr3Flags};
-use x86_64::structures::paging::frame::PhysFrame;
-use x86_64::structures::paging::page::{Size1GiB, Size2MiB};
-use x86_64::structures::paging::page_table::{PageTable, PageTableFlags};
-use x86_64::structures::paging::PageSize;
+use x86_64::{
+    addr::{PhysAddr, VirtAddr},
+    registers::control::{Cr3, Cr3Flags},
+    structures::paging::{
+        frame::PhysFrame,
+        page::{Size1GiB, Size2MiB},
+        page_table::{PageTable, PageTableFlags},
+        PageSize,
+    },
+};
 
 static mut PML4_TABLE: PageTable = PageTable::new();
 static mut PDP_TABLE: PageTable = PageTable::new();

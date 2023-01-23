@@ -1,5 +1,4 @@
-use crate::graphics::GRAPHIC;
-use crate::graphics::{Graphic, Rgb};
+use crate::graphics::{Graphic, Rgb, GRAPHIC};
 use core::fmt::Write;
 use lazy_static::lazy_static;
 use spin::Mutex;
@@ -21,7 +20,7 @@ pub struct Console {
 }
 
 impl Console {
-    pub fn new() -> Self {
+    fn new() -> Self {
         Console {
             buffer: [[0.into(); COLUMNS]; ROWS],
             column: 0,
@@ -30,7 +29,7 @@ impl Console {
         }
     }
 
-    pub fn put_string(&mut self, graphic: &mut Graphic, s: &str) {
+    fn put_string(&mut self, graphic: &mut Graphic, s: &str) {
         for c in s.chars() {
             if c == '\n' {
                 self.newline(graphic);

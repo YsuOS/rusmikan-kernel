@@ -21,11 +21,11 @@ const EMPTY_DEVICE: Device = Device {
 };
 
 #[derive(Copy, Clone, Debug)]
-pub struct ClassCode {
-    pub base: u8,
-    pub sub: u8,
-    pub interface: u8,
-    pub revision: u8,
+struct ClassCode {
+    base: u8,
+    sub: u8,
+    interface: u8,
+    revision: u8,
 }
 
 impl Display for ClassCode {
@@ -39,26 +39,26 @@ impl Display for ClassCode {
 }
 
 #[derive(Copy, Clone, Debug)]
-pub struct Device {
-    pub bus: u8,
-    pub device: u8,
-    pub function: u8,
+struct Device {
+    bus: u8,
+    device: u8,
+    function: u8,
 }
 
-pub struct PciDevices {
+struct PciDevices {
     devices: [Device; 32],
     count: usize,
 }
 
 impl PciDevices {
-    pub fn new() -> Self {
+    fn new() -> Self {
         Self {
             devices: [EMPTY_DEVICE; MAX_DEVICES],
             count: 0,
         }
     }
 
-    pub fn scan_bus(&mut self, bus: u8) {
+    fn scan_bus(&mut self, bus: u8) {
         for device in 0..MAX_DEVICES as u8 {
             if Device::new(bus, device, 0).read_vendor_id() != INVALID_VENDOR_ID {
                 self.scan_device(bus, device);
