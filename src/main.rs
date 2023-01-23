@@ -20,21 +20,18 @@ mod segment;
 mod serial;
 
 use alloc::{boxed::Box, vec::Vec};
+use allocator::ALLOCATOR;
 use console::CONSOLE;
-use core::arch::asm;
-use core::fmt::Write;
-use core::panic::PanicInfo;
+use core::{arch::asm, fmt::Write, panic::PanicInfo};
 use frame::{BitMapFrameManager, BITMAP_FRAME_MANAGER};
 use graphics::{Graphic, Rgb};
+use paging::active_level_4_table;
 use pci::list_pci_devices;
 use rusmikan::{FrameBufferConfig, MemoryMap};
 use x86_64::{
-    structures::paging::{OffsetPageTable, PageTable},
+    structures::paging::{OffsetPageTable, PageTable, Translate},
     VirtAddr,
 };
-
-use crate::{allocator::ALLOCATOR, paging::active_level_4_table};
-use x86_64::structures::paging::Translate;
 
 extern crate alloc;
 
