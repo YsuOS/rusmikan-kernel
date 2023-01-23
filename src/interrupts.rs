@@ -1,6 +1,6 @@
 use crate::ioapic::init_io_apic;
 use crate::lapic::{disable_pic_8259, init_lapic, EOI};
-use crate::{print, println, serial_println, JIFFIES};
+use crate::{print, println, segment, serial_println, JIFFIES};
 use x86_64::instructions::port::Port;
 use x86_64::structures::idt::{InterruptDescriptorTable, InterruptStackFrame};
 
@@ -28,7 +28,10 @@ static mut IDT: InterruptDescriptorTable = InterruptDescriptorTable::new();
 
 unsafe fn init_idt() {
     IDT.breakpoint.set_handler_fn(breakpoint_handler);
-    IDT[InterruptIndex::Timer as usize].set_handler_fn(timer_interrupt_handler);
+    IDT.double_fault.set_handler_fn(double_fault_handler);
+    IDT[InterruptIndex::Timer as usize]
+        .set_handler_fn(timer_interrupt_handler)
+        .set_stack_index(segment::DOUBLE_FAULT_IST_INDEX);
     IDT[InterruptIndex::Keyboard as usize].set_handler_fn(keyboard_interrupt_handler);
     IDT.load();
 }
@@ -63,4 +66,11 @@ extern "x86-interrupt" fn timer_interrupt_handler(_stack_frame: InterruptStackFr
         println!("Timer Interrupt: {} tick", JIFFIES);
         *(EOI as *mut u32) = 0;
     }
+}
+
+extern "x86-interrupt" fn double_fault_handler(
+    stack_frame: InterruptStackFrame,
+    _error_code: u64,
+) -> ! {
+    panic!("EXCEPTION: DOUBLE FAULT\n{:#?}", stack_frame);
 }

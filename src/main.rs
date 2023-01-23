@@ -98,6 +98,8 @@ pub extern "sysv64" fn kernel_main_new_stack(
     unsafe { acpi::init_rsdp(rsdp) };
     unsafe { interrupts::init() };
 
+    //unsafe { *(0xfffffffffffffff as *mut u64) = 42 };
+
     println!("This is Rusmikan");
     println!("1 + 2 = {}", 1 + 2);
     // x86_64::instructions::interrupts::int3();
