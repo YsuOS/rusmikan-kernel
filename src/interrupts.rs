@@ -1,20 +1,20 @@
-use x86_64::structures::idt::{InterruptDescriptorTable, InterruptStackFrame};
-use x86_64::instructions::port::Port;
 use crate::ioapic::init_io_apic;
-use crate::{print, println, JIFFIES, serial_println};
-use crate::lapic::{init_lapic,disable_pic_8259,EOI};
+use crate::lapic::{disable_pic_8259, init_lapic, EOI};
+use crate::{print, println, serial_println, JIFFIES};
+use x86_64::instructions::port::Port;
+use x86_64::structures::idt::{InterruptDescriptorTable, InterruptStackFrame};
 
 // IRQ
-pub const IRQ_OFFSET: u8 = 32;   // first 32 entries are reserved for exception by CPU
+pub const IRQ_OFFSET: u8 = 32; // first 32 entries are reserved for exception by CPU
 pub const IRQ_TMR: u32 = 0;
 pub const IRQ_KBD: u32 = 1;
 
 pub unsafe fn init() {
-        init_idt();
-        disable_pic_8259();
-        init_lapic();
-        init_io_apic();
-        x86_64::instructions::interrupts::enable();
+    init_idt();
+    disable_pic_8259();
+    init_lapic();
+    init_io_apic();
+    x86_64::instructions::interrupts::enable();
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -26,12 +26,10 @@ enum InterruptIndex {
 
 static mut IDT: InterruptDescriptorTable = InterruptDescriptorTable::new();
 
-unsafe fn init_idt(){
+unsafe fn init_idt() {
     IDT.breakpoint.set_handler_fn(breakpoint_handler);
-    IDT[InterruptIndex::Timer as usize]
-        .set_handler_fn(timer_interrupt_handler);
-    IDT[InterruptIndex::Keyboard as usize]
-        .set_handler_fn(keyboard_interrupt_handler);
+    IDT[InterruptIndex::Timer as usize].set_handler_fn(timer_interrupt_handler);
+    IDT[InterruptIndex::Keyboard as usize].set_handler_fn(keyboard_interrupt_handler);
     IDT.load();
 }
 
@@ -57,12 +55,11 @@ extern "x86-interrupt" fn keyboard_interrupt_handler(_stack_frame: InterruptStac
     unsafe {
         *(EOI as *mut u32) = 0;
     }
-
 }
 
 extern "x86-interrupt" fn timer_interrupt_handler(_stack_frame: InterruptStackFrame) {
     unsafe {
-        JIFFIES += 1;   // 1 tick
+        JIFFIES += 1; // 1 tick
         println!("Timer Interrupt: {} tick", JIFFIES);
         *(EOI as *mut u32) = 0;
     }

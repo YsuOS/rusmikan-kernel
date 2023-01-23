@@ -1,6 +1,8 @@
-use x86_64::structures::gdt::{GlobalDescriptorTable, Descriptor};
-use x86_64::instructions::segmentation::*;
-use x86_64::registers::segmentation::SegmentSelector;
+use x86_64::{
+    instructions::segmentation::*,
+    registers::segmentation::SegmentSelector,
+    structures::gdt::{Descriptor, GlobalDescriptorTable},
+};
 
 static mut GDT: GlobalDescriptorTable = GlobalDescriptorTable::new();
 

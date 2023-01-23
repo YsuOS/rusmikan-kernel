@@ -1,8 +1,8 @@
+use crate::acpi::wait_milliseconds_with_pm_timer;
 use core::ptr;
 use x86_64::instructions::port::Port;
-use crate::acpi::wait_milliseconds_with_pm_timer;
 
-use crate::interrupts::{IRQ_TMR, IRQ_OFFSET};
+use crate::interrupts::{IRQ_OFFSET, IRQ_TMR};
 
 // MMIO Address
 pub const LAPIC: u32 = 0xFEE00000;
@@ -15,7 +15,7 @@ const TMRCURRCNT: u32 = LAPIC + 0x00000390;
 const TMRDIV: u32 = LAPIC + 0x000003e0;
 
 const SVR_ENABLED: u32 = 0x00000100;
-const X1: u32 = 0b1011;   // divided by 1 (Divide Configuration Register)
+const X1: u32 = 0b1011; // divided by 1 (Divide Configuration Register)
 const LVT_MASKED: u32 = 0x00010000;
 const LVT_ONESHOT: u32 = 0x00000000;
 const LVT_PERIODIC: u32 = 0x00020000;
@@ -39,7 +39,7 @@ unsafe fn init_lapic_timer() {
     let timer_div = TMRDIV as *mut u32;
     let timer_init_cnt = TMRINITCNT as *mut u32;
     *timer_div = X1;
-    *lvt_timer = LVT_ONESHOT| LVT_MASKED;
+    *lvt_timer = LVT_ONESHOT | LVT_MASKED;
 
     start_lapic_timer();
     wait_milliseconds_with_pm_timer(100);
@@ -47,7 +47,7 @@ unsafe fn init_lapic_timer() {
     stop_lapic_timer();
     LAPIC_TMR_FREQ = elapsed * 10;
 
-    *lvt_timer = LVT_PERIODIC|(IRQ_OFFSET as u32 + IRQ_TMR);
+    *lvt_timer = LVT_PERIODIC | (IRQ_OFFSET as u32 + IRQ_TMR);
     ptr::write_volatile(timer_init_cnt, LAPIC_TMR_FREQ / 100);
 }
 

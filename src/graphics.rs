@@ -1,14 +1,13 @@
-use rusmikan::{FrameBuffer,FrameBufferConfig};
 use crate::ascii_font::FONTS;
 use crate::BG_COLOR;
+use rusmikan::{FrameBuffer, FrameBufferConfig};
 
-#[derive(Copy,Clone)]
+#[derive(Copy, Clone)]
 pub struct Rgb {
     pub r: u8,
     pub g: u8,
     pub b: u8,
 }
-
 
 pub static mut GRAPHIC: Option<Graphic> = None;
 
@@ -44,7 +43,7 @@ impl Graphic {
         let pixels_per_scan_line = self.fb_config.pixels_per_scan_line;
         let fb = &mut self.fb_config.frame_buffer;
         unsafe {
-            (self.pixel_writer)(fb, (x+pixels_per_scan_line*y)*4, rgb);        
+            (self.pixel_writer)(fb, (x + pixels_per_scan_line * y) * 4, rgb);
         }
     }
 
@@ -52,11 +51,11 @@ impl Graphic {
         if (c as u32) > 0x7f {
             return;
         }
-        let font: [u8;16] = FONTS[c as usize];
+        let font: [u8; 16] = FONTS[c as usize];
         for dy in 0..16 {
             for dx in 0..8 {
                 if (font[dy] << dx & 0x80) != 0 {
-                    self.write(x+dx, y+dy, rgb);
+                    self.write(x + dx, y + dy, rgb);
                 }
             }
         }
@@ -67,7 +66,7 @@ impl Graphic {
 
         self.clear_line(0, vert);
     }
-    
+
     pub fn clear_line(&mut self, y: usize, height: usize) {
         let hori = self.fb_config.horizontal_resolution;
 

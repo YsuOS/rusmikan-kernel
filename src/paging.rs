@@ -1,9 +1,9 @@
-use x86_64::structures::paging::page_table::{PageTable,PageTableFlags};
+use x86_64::addr::{PhysAddr, VirtAddr};
+use x86_64::registers::control::{Cr3, Cr3Flags};
 use x86_64::structures::paging::frame::PhysFrame;
+use x86_64::structures::paging::page::{Size1GiB, Size2MiB};
+use x86_64::structures::paging::page_table::{PageTable, PageTableFlags};
 use x86_64::structures::paging::PageSize;
-use x86_64::structures::paging::page::{Size2MiB,Size1GiB};
-use x86_64::registers::control::{Cr3,Cr3Flags};
-use x86_64::addr::{PhysAddr,VirtAddr};
 
 static mut PML4_TABLE: PageTable = PageTable::new();
 static mut PDP_TABLE: PageTable = PageTable::new();
@@ -17,10 +17,7 @@ pub unsafe fn init() {
 }
 
 fn get_phys_frame(page_table: &PageTable) -> PhysFrame {
-    PhysFrame::from_start_address(
-            PhysAddr::new(page_table as *const PageTable as u64)
-        )
-        .unwrap()
+    PhysFrame::from_start_address(PhysAddr::new(page_table as *const PageTable as u64)).unwrap()
 }
 
 unsafe fn setup_identity_page_table() {
@@ -29,20 +26,29 @@ unsafe fn setup_identity_page_table() {
     // PD  : 64 entry
     // thus this page table supports 64 GB memory range
     // 1 * 512 * 64 * 2MB
-    PML4_TABLE[0].set_frame(get_phys_frame(&PDP_TABLE), PageTableFlags::PRESENT | PageTableFlags::WRITABLE);
+    PML4_TABLE[0].set_frame(
+        get_phys_frame(&PDP_TABLE),
+        PageTableFlags::PRESENT | PageTableFlags::WRITABLE,
+    );
 
-    for (i,d) in PAGE_DIRECTORY.iter_mut().enumerate() {
-        PDP_TABLE[i].set_frame(get_phys_frame(d), PageTableFlags::PRESENT | PageTableFlags::WRITABLE);
+    for (i, d) in PAGE_DIRECTORY.iter_mut().enumerate() {
+        PDP_TABLE[i].set_frame(
+            get_phys_frame(d),
+            PageTableFlags::PRESENT | PageTableFlags::WRITABLE,
+        );
 
-        for (j,p) in PAGE_DIRECTORY[i].iter_mut().enumerate() {
+        for (j, p) in PAGE_DIRECTORY[i].iter_mut().enumerate() {
             let addr = PhysAddr::new(i as u64 * Size1GiB::SIZE + j as u64 * Size2MiB::SIZE);
-            p.set_addr(addr, PageTableFlags::PRESENT | PageTableFlags::WRITABLE | PageTableFlags::HUGE_PAGE);
+            p.set_addr(
+                addr,
+                PageTableFlags::PRESENT | PageTableFlags::WRITABLE | PageTableFlags::HUGE_PAGE,
+            );
         }
     }
 }
 
 pub unsafe fn active_level_4_table(physical_memory_offset: VirtAddr) -> &'static mut PageTable {
-    let (level_4_table_frame,_) = Cr3::read();
+    let (level_4_table_frame, _) = Cr3::read();
 
     let phys = level_4_table_frame.start_address();
     let virt = physical_memory_offset + phys.as_u64();

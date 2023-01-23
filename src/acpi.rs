@@ -1,12 +1,11 @@
-use bit_field::BitField;
-use rsdp;
-use core::mem;
 use crate::serial_println;
+use bit_field::BitField;
+use core::mem;
+use rsdp;
 use x86_64::instructions::port::Port;
 
 const PMTIMER_FREQ: usize = 3579545;
 pub static mut FADT_ADDR: u64 = 0;
-
 
 // FIXME: want to use acpi crate with alloc
 struct Rsdp {
@@ -36,7 +35,7 @@ const FADT: [u8; 4] = *b"FACP";
 // 36 bytes
 #[repr(C, packed)]
 pub struct SdtHeader {
-    pub signature: [u8;4],
+    pub signature: [u8; 4],
     pub length: u32,
     pub revision: u8,
     pub checksum: u8,
@@ -46,7 +45,6 @@ pub struct SdtHeader {
     pub creator_id: u32,
     pub creator_revision: u32,
 }
-
 
 #[derive(Clone, Copy)]
 pub struct Flags(u32);
@@ -80,8 +78,8 @@ pub unsafe fn init_rsdp(addr: u64) {
         panic!();
     }
     let header = rsdp.xsdt_address();
-    let length = (*(header as *const SdtHeader)).length; 
-    let sig = (*(header as *const SdtHeader)).signature; 
+    let length = (*(header as *const SdtHeader)).length;
+    let sig = (*(header as *const SdtHeader)).signature;
     serial_println!("{:?}", length);
     serial_println!("{:?}", sig);
     if sig == XSDT {
@@ -102,7 +100,6 @@ pub unsafe fn init_rsdp(addr: u64) {
             break;
         }
     }
-    
 }
 
 pub unsafe fn wait_milliseconds_with_pm_timer(msec: u32) {

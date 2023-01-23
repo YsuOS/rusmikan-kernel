@@ -1,7 +1,7 @@
-use bit_field::BitField;
-use x86_64::instructions::port::Port;
 use crate::serial_println;
+use bit_field::BitField;
 use core::fmt::Display;
+use x86_64::instructions::port::Port;
 
 const MAX_DEVICES: usize = 32;
 const MAX_FUNCTIONS: usize = 8;
@@ -34,7 +34,7 @@ impl Display for ClassCode {
             f,
             "{:02x}{:02x}{:02x}{:02x}",
             self.base, self.sub, self.interface, self.revision
-            )
+        )
     }
 }
 
@@ -98,7 +98,6 @@ impl PciDevices {
         self.devices[self.count] = device;
         self.count += 1;
     }
-
 }
 
 impl Device {
@@ -118,7 +117,7 @@ impl Device {
         value.set_bit(31, true);
         value
     }
-    
+
     fn read(self, reg: u8) -> u32 {
         let addr = self.make_address(reg);
         unsafe {
@@ -126,23 +125,23 @@ impl Device {
             CONFIG_DATA.read()
         }
     }
-    
+
     fn read_header_type(self) -> u8 {
         ((self.read(0x0c) >> 16) & 0xff) as u8
     }
-    
+
     fn is_single_function_device(self) -> bool {
         // Check 7th bit of header_type.
         // 1: multi function device.
         // 0: single function device.
         let header_type = self.read_header_type();
-        header_type & 0x80 == 0 
+        header_type & 0x80 == 0
     }
-    
+
     fn read_vendor_id(self) -> u16 {
         (self.read(0x0) & 0xffff) as u16
     }
-    
+
     fn read_class_code(self) -> ClassCode {
         let r = self.read(0x08);
         ClassCode {
@@ -152,7 +151,7 @@ impl Device {
             revision: (r & 0xff) as u8,
         }
     }
-    
+
     fn read_bus_numbers(self) -> u16 {
         (self.read(0x18) & 0xffff) as u16
     }
@@ -163,21 +162,27 @@ pub fn list_pci_devices() {
     for i in 0..pci_devices.count {
         let dev = pci_devices.devices[i];
         let class_code = dev.read_class_code();
-        serial_println!("{}:{}.{} vend {:04x}, class {}, head {:02x}",
-            dev.bus, dev.device, dev.function, dev.read_vendor_id(), 
-            class_code, dev.read_header_type());
+        serial_println!(
+            "{}:{}.{} vend {:04x}, class {}, head {:02x}",
+            dev.bus,
+            dev.device,
+            dev.function,
+            dev.read_vendor_id(),
+            class_code,
+            dev.read_header_type()
+        );
     }
 }
 
 fn scan_all_bus() -> PciDevices {
     let mut pci_devices = PciDevices::new();
-    if Device::new(0,0,0).is_single_function_device() {
+    if Device::new(0, 0, 0).is_single_function_device() {
         pci_devices.scan_bus(0);
         return pci_devices;
     }
 
     for function in 1..MAX_FUNCTIONS as u8 {
-        if Device::new(0,0,function).read_vendor_id() != INVALID_VENDOR_ID {
+        if Device::new(0, 0, function).read_vendor_id() != INVALID_VENDOR_ID {
             pci_devices.scan_bus(function);
         }
     }

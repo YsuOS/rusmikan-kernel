@@ -1,6 +1,6 @@
-use rusmikan::MemoryMap;
 use core::mem;
-use x86_64::structures::paging::{Size4KiB, FrameAllocator, PhysFrame};
+use rusmikan::MemoryMap;
+use x86_64::structures::paging::{FrameAllocator, PhysFrame, Size4KiB};
 use x86_64::PhysAddr;
 
 use crate::serial_println;
@@ -77,7 +77,7 @@ impl BitMapFrameManager {
                 if frame + i > self.end {
                     return None;
                 }
-                if self.get_bit(frame+i) {
+                if self.get_bit(frame + i) {
                     break;
                 }
                 i += 1;

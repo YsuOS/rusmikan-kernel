@@ -1,7 +1,13 @@
-use core::{alloc::{Layout, GlobalAlloc}, mem};
+use core::{
+    alloc::{GlobalAlloc, Layout},
+    mem,
+};
 use x86_64::VirtAddr;
 
-use crate::{serial_println, frame::{FRAME_BYTES, BITMAP_FRAME_MANAGER}, panic};
+use crate::{
+    frame::{BITMAP_FRAME_MANAGER, FRAME_BYTES},
+    panic, serial_println,
+};
 use core::ptr;
 
 #[global_allocator]
@@ -30,9 +36,9 @@ impl KernelAllocator {
     unsafe fn allocate_frame_for_block(&mut self, index: usize) -> *mut u8 {
         let block_size = BLOCK_SIZES[index];
         let num_blocks_per_frame = FRAME_BYTES / block_size;
-    
+
         let ptr: *mut u8 = match BITMAP_FRAME_MANAGER.allocate(1) {
-            Some(frame) => VirtAddr::new((frame*FRAME_BYTES) as u64).as_u64() as *mut u8,
+            Some(frame) => VirtAddr::new((frame * FRAME_BYTES) as u64).as_u64() as *mut u8,
             None => return ptr::null_mut(),
         };
         for i in (0..num_blocks_per_frame).rev() {
@@ -64,23 +70,26 @@ unsafe impl GlobalAlloc for Locked<KernelAllocator> {
                         allocator.list_heads[index] = node.next.take();
                         node as *mut ListNode as *mut u8
                     }
-                    None => { 
+                    None => {
                         let ptr = allocator.allocate_frame_for_block(index);
                         ptr as *mut ListNode as *mut u8
                     }
-                }},
-            None => { 
+                }
+            }
+            None => {
                 // TODO: support > 4096 size allocation
                 serial_println!("No index. allocate frame {:?}", layout.size());
                 if layout.size() == FRAME_BYTES {
                     match BITMAP_FRAME_MANAGER.allocate(layout.size() / FRAME_BYTES) {
-                        Some(frame) => VirtAddr::new((frame*FRAME_BYTES) as u64).as_u64() as *mut u8,
+                        Some(frame) => {
+                            VirtAddr::new((frame * FRAME_BYTES) as u64).as_u64() as *mut u8
+                        }
                         None => panic!("Out Of Memory"),
                     }
                 } else {
                     panic!("heap allocation over 4 KiB is not supported!");
                 }
-            },
+            }
         }
     }
 
@@ -95,14 +104,13 @@ unsafe impl GlobalAlloc for Locked<KernelAllocator> {
                 let new_node_ptr = ptr as *mut ListNode;
                 new_node_ptr.write(new_node);
                 allocator.list_heads[index] = Some(&mut *new_node_ptr);
-            },
+            }
             None => {
                 // TODO: support > 4096 size allocation
                 BITMAP_FRAME_MANAGER.free(ptr as usize / FRAME_BYTES, 1);
-            },
+            }
         }
     }
-
 }
 
 pub struct Locked<A> {

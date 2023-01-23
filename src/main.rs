@@ -5,37 +5,44 @@
 #![feature(const_mut_refs)]
 #![feature(pointer_is_aligned)]
 
-mod graphics;
-mod ascii_font;
-mod console;
-mod pci;
-mod serial;
-mod interrupts;
-mod segment;
-mod paging;
-mod frame;
-mod lapic;
-mod ioapic;
 mod acpi;
 mod allocator;
+mod ascii_font;
+mod console;
+mod frame;
+mod graphics;
+mod interrupts;
+mod ioapic;
+mod lapic;
+mod paging;
+mod pci;
+mod segment;
+mod serial;
 
-use core::panic::PanicInfo;
-use core::arch::asm;
 use alloc::{boxed::Box, vec::Vec};
-use rusmikan::{FrameBufferConfig,MemoryMap};
-use graphics::{Graphic, Rgb};
-use x86_64::{VirtAddr, structures::paging::{PageTable, OffsetPageTable}};
-use core::fmt::Write;
 use console::CONSOLE;
+use core::arch::asm;
+use core::fmt::Write;
+use core::panic::PanicInfo;
+use frame::{BitMapFrameManager, BITMAP_FRAME_MANAGER};
+use graphics::{Graphic, Rgb};
 use pci::list_pci_devices;
-use frame::{BitMapFrameManager,BITMAP_FRAME_MANAGER};
+use rusmikan::{FrameBufferConfig, MemoryMap};
+use x86_64::{
+    structures::paging::{OffsetPageTable, PageTable},
+    VirtAddr,
+};
 
-use crate::{paging::active_level_4_table, allocator::ALLOCATOR};
+use crate::{allocator::ALLOCATOR, paging::active_level_4_table};
 use x86_64::structures::paging::Translate;
 
 extern crate alloc;
 
-const BG_COLOR: Rgb = Rgb { r: 241, g:141, b:0 };
+const BG_COLOR: Rgb = Rgb {
+    r: 241,
+    g: 141,
+    b: 0,
+};
 
 pub static mut JIFFIES: u64 = 0;
 
@@ -78,14 +85,19 @@ struct KernelMainStack([u8; 1024 * 1024]);
 static mut KERNEL_MAIN_STACK: KernelMainStack = KernelMainStack([0; 1024 * 1024]);
 
 #[no_mangle]
-pub extern "sysv64" fn kernel_main_new_stack (fb_config: &FrameBufferConfig, memory_map: &MemoryMap, rsdp: u64) -> ! {
+pub extern "sysv64" fn kernel_main_new_stack(
+    fb_config: &FrameBufferConfig,
+    memory_map: &MemoryMap,
+    rsdp: u64,
+) -> ! {
     serial_println!("System Info");
-    let graphic = unsafe { Graphic::init(*fb_config) };
-    graphic.clear();
-
     unsafe { segment::init() };
     unsafe { BitMapFrameManager::init(memory_map) };
     unsafe { paging::init() };
+
+    let graphic = unsafe { Graphic::init(*fb_config) };
+    graphic.clear();
+
     unsafe { acpi::init_rsdp(rsdp) };
     unsafe { interrupts::init() };
 
@@ -103,23 +115,19 @@ pub extern "sysv64" fn kernel_main_new_stack (fb_config: &FrameBufferConfig, mem
     let l4_table = unsafe { active_level_4_table(phys_mem_offset) };
     let mapper = unsafe { OffsetPageTable::new(l4_table, phys_mem_offset) };
 
-//    for (i,entry) in l4_table.iter().enumerate() {
-//        if !entry.is_unused() {
-//            serial_println!("L4 Entry {}: {:?}", i, entry);
-//
-//            let phys = entry.frame().unwrap().start_address();
-//            let virt = phys.as_u64() + phys_mem_offset.as_u64();
-//            let ptr = VirtAddr::new(virt).as_mut_ptr();
-//            let l3_table: &PageTable = unsafe { &*ptr };
-//       }
-//    }
+    //    for (i,entry) in l4_table.iter().enumerate() {
+    //        if !entry.is_unused() {
+    //            serial_println!("L4 Entry {}: {:?}", i, entry);
+    //
+    //            let phys = entry.frame().unwrap().start_address();
+    //            let virt = phys.as_u64() + phys_mem_offset.as_u64();
+    //            let ptr = VirtAddr::new(virt).as_mut_ptr();
+    //            let l3_table: &PageTable = unsafe { &*ptr };
+    //       }
+    //    }
 
-    let addresses = [
-        0x0,
-        0xb8000,
-        0x201008,
-    ];
- 
+    let addresses = [0x0, 0xb8000, 0x201008];
+
     for &address in &addresses {
         let virt = VirtAddr::new(address);
         let phys = mapper.translate_addr(virt);
@@ -146,7 +154,7 @@ pub extern "sysv64" fn kernel_main_new_stack (fb_config: &FrameBufferConfig, mem
     //}
 
     // panic!();
-    loop{
+    loop {
         unsafe {
             asm!("hlt");
         }
