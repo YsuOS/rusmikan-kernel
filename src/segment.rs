@@ -26,18 +26,38 @@ lazy_static! {
     };
 }
 
-static mut GDT: GlobalDescriptorTable = GlobalDescriptorTable::new();
+lazy_static! {
+    static ref GDT: (GlobalDescriptorTable, Selectors) = {
+        let mut gdt = GlobalDescriptorTable::new();
+        let code_selector = gdt.add_entry(Descriptor::kernel_code_segment());
+        let data_selector = gdt.add_entry(Descriptor::kernel_data_segment());
+        let tss_selector = gdt.add_entry(Descriptor::tss_segment(&TSS));
+        (
+            gdt,
+            Selectors {
+                code_selector,
+                data_selector,
+                tss_selector,
+            },
+        )
+    };
+}
 
-pub unsafe fn init() {
-    let code_selector = GDT.add_entry(Descriptor::kernel_code_segment());
-    let data_selector = GDT.add_entry(Descriptor::kernel_data_segment());
-    let tss_selector = GDT.add_entry(Descriptor::tss_segment(&TSS));
-    GDT.load();
-    CS::set_reg(code_selector);
-    SS::set_reg(data_selector);
-    DS::set_reg(SegmentSelector::NULL);
-    ES::set_reg(SegmentSelector::NULL);
-    FS::set_reg(SegmentSelector::NULL);
-    GS::set_reg(SegmentSelector::NULL);
-    load_tss(tss_selector);
+struct Selectors {
+    code_selector: SegmentSelector,
+    data_selector: SegmentSelector,
+    tss_selector: SegmentSelector,
+}
+
+pub fn init() {
+    GDT.0.load();
+    unsafe {
+        CS::set_reg(GDT.1.code_selector);
+        SS::set_reg(GDT.1.data_selector);
+        DS::set_reg(SegmentSelector::NULL);
+        ES::set_reg(SegmentSelector::NULL);
+        FS::set_reg(SegmentSelector::NULL);
+        GS::set_reg(SegmentSelector::NULL);
+        load_tss(GDT.1.tss_selector);
+    }
 }

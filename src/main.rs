@@ -88,7 +88,6 @@ pub extern "sysv64" fn kernel_main_new_stack(
     rsdp: u64,
 ) -> ! {
     serial_println!("System Info");
-    unsafe { segment::init() };
     unsafe { BitMapFrameManager::init(memory_map) };
     unsafe { paging::init() };
 
@@ -96,6 +95,7 @@ pub extern "sysv64" fn kernel_main_new_stack(
     graphic.clear();
 
     unsafe { acpi::init_rsdp(rsdp) };
+    segment::init();
     unsafe { interrupts::init() };
 
     //unsafe { *(0xfffffffffffffff as *mut u64) = 42 };
