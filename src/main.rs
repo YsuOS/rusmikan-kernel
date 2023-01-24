@@ -88,7 +88,7 @@ pub extern "sysv64" fn kernel_main_new_stack(
     rsdp: u64,
 ) -> ! {
     serial_println!("System Info");
-    unsafe { BitMapFrameManager::init(memory_map) };
+    BitMapFrameManager::init(memory_map);
     unsafe { paging::init() };
 
     let graphic = unsafe { Graphic::init(*fb_config) };
@@ -110,6 +110,7 @@ pub extern "sysv64" fn kernel_main_new_stack(
     for d in mm {
         serial_println!("{:x?}", d);
     }
+
     let phys_mem_offset = VirtAddr::new(0);
     let l4_table = unsafe { active_level_4_table(phys_mem_offset) };
     let mapper = unsafe { OffsetPageTable::new(l4_table, phys_mem_offset) };

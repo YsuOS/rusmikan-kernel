@@ -1,5 +1,9 @@
 use core::mem;
+use lazy_static::lazy_static;
 use rusmikan::MemoryMap;
+use spin::Mutex;
+
+use crate::serial_println;
 
 pub const FRAME_BYTES: usize = 4096;
 const MAX_PHYSICAL_MEMORY_BYTES: usize = 128 * 1024 * 1024 * 1024;
@@ -7,9 +11,9 @@ const FRAME_COUNTS: usize = MAX_PHYSICAL_MEMORY_BYTES / FRAME_BYTES;
 const BITS_PER_MAP_LINE: usize = 8 * mem::size_of::<usize>();
 const FRAME_MIN: usize = 1; // FIXME: 0 causes alloc error
 
-pub static mut BITMAP_FRAME_MANAGER: BitMapFrameManager = BitMapFrameManager::new();
+pub static BITMAP_FRAME_MANAGER: Mutex<BitMapFrameManager> = Mutex::new(BitMapFrameManager::new());
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug)]
 pub struct BitMapFrameManager {
     alloc_map: [usize; FRAME_COUNTS / BITS_PER_MAP_LINE],
     begin: usize,
@@ -25,7 +29,7 @@ impl BitMapFrameManager {
         }
     }
 
-    pub unsafe fn init(mm: &MemoryMap) {
+    pub fn init(mm: &MemoryMap) {
         let mut available_end: usize = FRAME_MIN;
         for d in mm.descriptors() {
             let phys_start = d.phys_start as usize;
@@ -33,11 +37,13 @@ impl BitMapFrameManager {
             if available_end < phys_start {
                 let frame_id = available_end / FRAME_BYTES;
                 let frame_num = (phys_start - available_end) / FRAME_BYTES;
-                BITMAP_FRAME_MANAGER.mark_allocated(frame_id, frame_num);
+                BITMAP_FRAME_MANAGER
+                    .lock()
+                    .mark_allocated(frame_id, frame_num);
             }
             available_end = phys_end;
         }
-        BITMAP_FRAME_MANAGER.end = available_end / FRAME_BYTES;
+        BITMAP_FRAME_MANAGER.lock().end = available_end / FRAME_BYTES;
     }
 
     fn mark_allocated(&mut self, start_frame_id: usize, frame_num: usize) {

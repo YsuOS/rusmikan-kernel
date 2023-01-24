@@ -35,7 +35,7 @@ impl KernelAllocator {
         let block_size = BLOCK_SIZES[index];
         let num_blocks_per_frame = FRAME_BYTES / block_size;
 
-        let ptr: *mut u8 = match BITMAP_FRAME_MANAGER.allocate(1) {
+        let ptr: *mut u8 = match BITMAP_FRAME_MANAGER.lock().allocate(1) {
             Some(frame) => VirtAddr::new((frame * FRAME_BYTES) as u64).as_u64() as *mut u8,
             None => return ptr::null_mut(),
         };
@@ -78,7 +78,10 @@ unsafe impl GlobalAlloc for Locked<KernelAllocator> {
                 // TODO: support > 4096 size allocation
                 serial_println!("No index. allocate frame {:?}", layout.size());
                 if layout.size() == FRAME_BYTES {
-                    match BITMAP_FRAME_MANAGER.allocate(layout.size() / FRAME_BYTES) {
+                    match BITMAP_FRAME_MANAGER
+                        .lock()
+                        .allocate(layout.size() / FRAME_BYTES)
+                    {
                         Some(frame) => {
                             VirtAddr::new((frame * FRAME_BYTES) as u64).as_u64() as *mut u8
                         }
@@ -105,7 +108,9 @@ unsafe impl GlobalAlloc for Locked<KernelAllocator> {
             }
             None => {
                 // TODO: support > 4096 size allocation
-                BITMAP_FRAME_MANAGER.free(ptr as usize / FRAME_BYTES, 1);
+                BITMAP_FRAME_MANAGER
+                    .lock()
+                    .free(ptr as usize / FRAME_BYTES, 1);
             }
         }
     }
