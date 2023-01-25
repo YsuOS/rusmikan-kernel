@@ -3,7 +3,6 @@
 #![feature(abi_x86_interrupt)]
 #![feature(alloc_error_handler)]
 #![feature(const_mut_refs)]
-#![feature(pointer_is_aligned)]
 
 mod acpi;
 mod allocator;
@@ -45,7 +44,7 @@ pub static mut JIFFIES: u64 = 0;
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(u32)]
 enum QemuExitCode {
-    Success = 0x10,
+    _Success = 0x10,
     Failed = 0x11,
 }
 

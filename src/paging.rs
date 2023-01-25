@@ -10,8 +10,6 @@ use x86_64::{
     },
 };
 
-use crate::serial_println;
-
 static PML4_TABLE: Mutex<PageTable> = Mutex::new(PageTable::new());
 static PDP_TABLE: Mutex<PageTable> = Mutex::new(PageTable::new());
 
@@ -21,6 +19,9 @@ static PD_TABLE: Mutex<[PageTable; PD_TABLE_CNT]> = Mutex::new([EMPTY_PAGE_TABLE
 
 pub fn init() {
     setup_identity_page_table();
+    unsafe {
+        Cr3::write(get_phys_frame(&PML4_TABLE.lock()), Cr3Flags::empty());
+    }
 }
 
 fn get_phys_frame(page_table: &PageTable) -> PhysFrame {
@@ -56,9 +57,6 @@ fn setup_identity_page_table() {
                 PageTableFlags::PRESENT | PageTableFlags::WRITABLE | PageTableFlags::HUGE_PAGE,
             );
         }
-    }
-    unsafe {
-        Cr3::write(get_phys_frame(&PML4_TABLE.lock()), Cr3Flags::empty());
     }
 }
 

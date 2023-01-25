@@ -1,9 +1,6 @@
 use core::mem;
-use lazy_static::lazy_static;
 use rusmikan::MemoryMap;
 use spin::Mutex;
-
-use crate::serial_println;
 
 pub const FRAME_BYTES: usize = 4096;
 const MAX_PHYSICAL_MEMORY_BYTES: usize = 128 * 1024 * 1024 * 1024;
