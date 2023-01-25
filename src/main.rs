@@ -20,16 +20,15 @@ mod segment;
 mod serial;
 
 use alloc::{boxed::Box, vec::Vec};
-use allocator::ALLOCATOR;
 use console::CONSOLE;
 use core::{arch::asm, fmt::Write, panic::PanicInfo};
-use frame::{BitMapFrameManager, BITMAP_FRAME_MANAGER};
+use frame::BitMapFrameManager;
 use graphics::{Graphic, Rgb};
 use paging::active_level_4_table;
 use pci::list_pci_devices;
 use rusmikan::{FrameBufferConfig, MemoryMap};
 use x86_64::{
-    structures::paging::{OffsetPageTable, PageTable, Translate},
+    structures::paging::{OffsetPageTable, Translate},
     VirtAddr,
 };
 
@@ -89,7 +88,7 @@ pub extern "sysv64" fn kernel_main_new_stack(
 ) -> ! {
     serial_println!("System Info");
     BitMapFrameManager::init(memory_map);
-    unsafe { paging::init() };
+    paging::init();
 
     let graphic = unsafe { Graphic::init(*fb_config) };
     graphic.clear();
@@ -115,6 +114,7 @@ pub extern "sysv64" fn kernel_main_new_stack(
     let l4_table = unsafe { active_level_4_table(phys_mem_offset) };
     let mapper = unsafe { OffsetPageTable::new(l4_table, phys_mem_offset) };
 
+    // use x86_64::structures::paging::PageTable;
     //    for (i,entry) in l4_table.iter().enumerate() {
     //        if !entry.is_unused() {
     //            serial_println!("L4 Entry {}: {:?}", i, entry);

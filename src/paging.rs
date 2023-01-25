@@ -1,3 +1,4 @@
+use spin::Mutex;
 use x86_64::{
     addr::{PhysAddr, VirtAddr},
     registers::control::{Cr3, Cr3Flags},
@@ -9,45 +10,55 @@ use x86_64::{
     },
 };
 
-static mut PML4_TABLE: PageTable = PageTable::new();
-static mut PDP_TABLE: PageTable = PageTable::new();
+use crate::serial_println;
+
+static PML4_TABLE: Mutex<PageTable> = Mutex::new(PageTable::new());
+static PDP_TABLE: Mutex<PageTable> = Mutex::new(PageTable::new());
 
 const EMPTY_PAGE_TABLE: PageTable = PageTable::new();
-static mut PAGE_DIRECTORY: [PageTable; 64] = [EMPTY_PAGE_TABLE; 64];
+const PD_TABLE_CNT: usize = 64;
+static PD_TABLE: Mutex<[PageTable; PD_TABLE_CNT]> = Mutex::new([EMPTY_PAGE_TABLE; PD_TABLE_CNT]);
 
-pub unsafe fn init() {
+pub fn init() {
     setup_identity_page_table();
-    Cr3::write(get_phys_frame(&PML4_TABLE), Cr3Flags::empty());
 }
 
 fn get_phys_frame(page_table: &PageTable) -> PhysFrame {
     PhysFrame::from_start_address(PhysAddr::new(page_table as *const PageTable as u64)).unwrap()
 }
 
-unsafe fn setup_identity_page_table() {
-    // PML4: 1 entry
-    // PDP : 512 entry
-    // PD  : 64 entry
+fn setup_identity_page_table() {
+    // PML4: 1 entry/512 entry = 1 PDP Table
+    // PDP : 64 entry/512 entry = 64 PD Table
+    // PD  : 512 entry/512 entry = 512 * 2MB Address
     // thus this page table supports 64 GB memory range
-    // 1 * 512 * 64 * 2MB
-    PML4_TABLE[0].set_frame(
-        get_phys_frame(&PDP_TABLE),
+    // 1 * 64 * 512 * 2MB
+    let mut pml4_table = PML4_TABLE.lock();
+    pml4_table[0].set_frame(
+        get_phys_frame(&PDP_TABLE.lock()),
         PageTableFlags::PRESENT | PageTableFlags::WRITABLE,
     );
 
-    for (i, d) in PAGE_DIRECTORY.iter_mut().enumerate() {
-        PDP_TABLE[i].set_frame(
-            get_phys_frame(d),
+    for (i, pd_table) in PD_TABLE.lock().iter_mut().enumerate() {
+        let mut pdp_table = PDP_TABLE.lock();
+        pdp_table[i].set_frame(
+            get_phys_frame(pd_table),
             PageTableFlags::PRESENT | PageTableFlags::WRITABLE,
         );
+    }
 
-        for (j, p) in PAGE_DIRECTORY[i].iter_mut().enumerate() {
+    for i in 0..PD_TABLE_CNT {
+        let mut pd_table = PD_TABLE.lock();
+        for (j, entry) in pd_table[i].iter_mut().enumerate() {
             let addr = PhysAddr::new(i as u64 * Size1GiB::SIZE + j as u64 * Size2MiB::SIZE);
-            p.set_addr(
+            entry.set_addr(
                 addr,
                 PageTableFlags::PRESENT | PageTableFlags::WRITABLE | PageTableFlags::HUGE_PAGE,
             );
         }
+    }
+    unsafe {
+        Cr3::write(get_phys_frame(&PML4_TABLE.lock()), Cr3Flags::empty());
     }
 }
 
