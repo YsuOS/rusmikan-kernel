@@ -9,7 +9,23 @@ use core::{
 use x86_64::VirtAddr;
 
 #[global_allocator]
-pub static ALLOCATOR: Locked<KernelAllocator> = Locked::new(KernelAllocator::new());
+pub static ALLOCATOR: Mutex<KernelAllocator> = Mutex::new(KernelAllocator::new());
+
+pub struct Mutex<A> {
+    inner: spin::Mutex<A>,
+}
+
+impl<A> Mutex<A> {
+    const fn new(inner: A) -> Self {
+        Mutex {
+            inner: spin::Mutex::new(inner),
+        }
+    }
+
+    fn lock(&self) -> spin::MutexGuard<A> {
+        self.inner.lock()
+    }
+}
 
 const BLOCK_SIZES: &[usize] = &[8, 16, 32, 64, 128, 256, 512, 1024, 2048];
 
@@ -57,7 +73,7 @@ fn list_index(layout: &Layout) -> Option<usize> {
     BLOCK_SIZES.iter().position(|&s| s >= required_block_size)
 }
 
-unsafe impl GlobalAlloc for Locked<KernelAllocator> {
+unsafe impl GlobalAlloc for Mutex<KernelAllocator> {
     unsafe fn alloc(&self, layout: Layout) -> *mut u8 {
         let mut allocator = self.lock();
         match list_index(&layout) {
@@ -113,21 +129,5 @@ unsafe impl GlobalAlloc for Locked<KernelAllocator> {
                     .free(ptr as usize / FRAME_BYTES, 1);
             }
         }
-    }
-}
-
-pub struct Locked<A> {
-    inner: spin::Mutex<A>,
-}
-
-impl<A> Locked<A> {
-    const fn new(inner: A) -> Self {
-        Locked {
-            inner: spin::Mutex::new(inner),
-        }
-    }
-
-    fn lock(&self) -> spin::MutexGuard<A> {
-        self.inner.lock()
     }
 }
