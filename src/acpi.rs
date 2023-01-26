@@ -1,4 +1,3 @@
-use crate::serial_println;
 use acpi::{platform::PmTimer, AcpiHandler, AcpiTables, PhysicalMapping};
 use core::ptr::NonNull;
 use x86_64::{instructions::port::Port, PhysAddr, VirtAddr};
@@ -9,10 +8,9 @@ pub unsafe fn init(addr: usize) -> AcpiTables<KernelAcpiHandler> {
     AcpiTables::from_rsdp(KernelAcpiHandler, addr).unwrap()
 }
 
-pub fn wait_milliseconds_with_pm_timer(pm_timer: PmTimer, msec: u32) {
+pub fn wait_milliseconds_with_pm_timer(pm_timer: &PmTimer, msec: u32) {
     let mut timer = Port::<u32>::new(pm_timer.base.address as u16);
     let start = unsafe { timer.read() };
-    serial_println!("{:?}", start);
     let mut end = start.wrapping_add((PMTIMER_FREQ * msec as usize / 1000) as u32);
 
     if !pm_timer.supports_32bit {

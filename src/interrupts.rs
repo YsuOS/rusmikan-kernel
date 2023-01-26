@@ -3,9 +3,8 @@ use crate::{
     lapic::{disable_pic_8259, init_lapic, EOI},
     print, println, segment, serial_println, JIFFIES,
 };
-use acpi::platform::PmTimer;
+use acpi::PlatformInfo;
 use lazy_static::lazy_static;
-use spin::Mutex;
 use x86_64::{
     instructions::port::Port,
     structures::idt::{InterruptDescriptorTable, InterruptStackFrame},
@@ -16,13 +15,11 @@ pub const IRQ_OFFSET: u8 = 32; // first 32 entries are reserved for exception by
 pub const IRQ_TMR: u32 = 0;
 pub const IRQ_KBD: u32 = 1;
 
-pub fn init(pm_timer: PmTimer) {
+pub fn init(platform_info: &PlatformInfo) {
     init_idt();
-    unsafe {
-        disable_pic_8259();
-        init_lapic(pm_timer);
-        init_io_apic();
-    }
+    unsafe { disable_pic_8259() };
+    init_lapic(platform_info);
+    unsafe { init_io_apic() };
     x86_64::instructions::interrupts::enable();
 }
 
