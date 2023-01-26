@@ -1,7 +1,6 @@
-use crate::{
-    interrupts::{IRQ_KBD, IRQ_OFFSET},
-    lapic::LAPIC,
-};
+use acpi::platform::interrupt::Apic;
+
+use crate::interrupts::{IRQ_KBD, IRQ_OFFSET};
 use core::ptr;
 
 struct IoApic {
@@ -34,30 +33,27 @@ struct IoApicMmio {
     data: u32, // IOAPICBASE + 0x10
 }
 
-// MMIO Address
-const IOAPIC: u32 = 0xFEC00000;
 // IOREGSEL Offset
 const IOAPICID: u32 = 0x00000000;
 const IOREDTBL: u32 = 0x00000010;
 
 const REDTBL_MASKED: u32 = 0x00010000;
 
-pub unsafe fn init_io_apic() {
-    let ioapic = IoApic::new(IOAPIC);
-    let max_intr = ioapic.read(IOAPICID) >> 16 & 0xFF;
+pub fn init_io_apic(apic: &Apic, bsp_lapic_id: u32) {
+    let ioapic = IoApic::new(apic.io_apics.first().unwrap().address);
+    let max_intr = unsafe { ioapic.read(IOAPICID) } >> 16 & 0xFF;
 
     // Mark all interrupts edge-triggered, active high, disable, and not routed to any CPUs.
     for i in 0..max_intr {
-        ioapic.write(IOREDTBL + 2 * i, REDTBL_MASKED | (IRQ_OFFSET as u32 + i));
-        ioapic.write(IOREDTBL + 2 * i + 1, 0);
+        unsafe {
+            ioapic.write(IOREDTBL + 2 * i, REDTBL_MASKED | (IRQ_OFFSET as u32 + i));
+            ioapic.write(IOREDTBL + 2 * i + 1, 0);
+        }
     }
 
-    // FIXME: no supported SMP
-    // current implementation get lapic_id from processor that the code is currently executing
-    // on (BSP)
-    let lapic_id = *(LAPIC as *mut u32) >> 24; // Get Local APIC ID
-
     // Mark IRQ1 interrupt edge-triggered, active high, enable, and routed to the given cpunum
-    ioapic.write(IOREDTBL + 2 * IRQ_KBD, IRQ_OFFSET as u32 + IRQ_KBD);
-    ioapic.write(IOREDTBL + 2 * IRQ_KBD + 1, lapic_id << 24);
+    unsafe {
+        ioapic.write(IOREDTBL + 2 * IRQ_KBD, IRQ_OFFSET as u32 + IRQ_KBD);
+        ioapic.write(IOREDTBL + 2 * IRQ_KBD + 1, bsp_lapic_id << 24);
+    }
 }

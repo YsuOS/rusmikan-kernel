@@ -1,4 +1,5 @@
 use crate::{
+    acpi::{get_apic_info, get_bsp_info},
     ioapic::init_io_apic,
     lapic::{disable_pic_8259, init_lapic, EOI},
     print, println, segment, serial_println, JIFFIES,
@@ -18,8 +19,11 @@ pub const IRQ_KBD: u32 = 1;
 pub fn init(platform_info: &PlatformInfo) {
     init_idt();
     unsafe { disable_pic_8259() };
-    init_lapic(platform_info);
-    unsafe { init_io_apic() };
+
+    let apic = get_apic_info(platform_info);
+    init_lapic(apic, platform_info);
+    let bsp_info = get_bsp_info(platform_info);
+    init_io_apic(apic, bsp_info.local_apic_id);
     x86_64::instructions::interrupts::enable();
 }
 

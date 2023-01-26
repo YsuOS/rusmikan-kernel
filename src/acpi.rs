@@ -1,4 +1,7 @@
-use acpi::{platform::PmTimer, AcpiHandler, AcpiTables, PhysicalMapping};
+use acpi::{
+    platform::{interrupt::Apic, PmTimer, Processor},
+    AcpiHandler, AcpiTables, InterruptModel, PhysicalMapping, PlatformInfo,
+};
 use core::ptr::NonNull;
 use x86_64::{instructions::port::Port, PhysAddr, VirtAddr};
 
@@ -21,6 +24,21 @@ pub fn wait_milliseconds_with_pm_timer(pm_timer: &PmTimer, msec: u32) {
         while unsafe { timer.read() } >= start {}
     }
     while unsafe { timer.read() } < end {}
+}
+
+pub fn get_apic_info(platform_info: &PlatformInfo) -> &Apic {
+    match &platform_info.interrupt_model {
+        InterruptModel::Apic(apic) => apic,
+        _ => panic!("Could not find APIC"),
+    }
+}
+
+pub fn get_bsp_info(platform_info: &PlatformInfo) -> Processor {
+    platform_info
+        .processor_info
+        .as_ref()
+        .unwrap()
+        .boot_processor
 }
 
 #[derive(Clone)]

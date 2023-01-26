@@ -3,7 +3,7 @@ use crate::{
     interrupts::{IRQ_OFFSET, IRQ_TMR},
 };
 use acpi::{
-    platform::{interrupt::InterruptModel, PmTimer},
+    platform::{interrupt::Apic, PmTimer},
     PlatformInfo,
 };
 use core::ptr;
@@ -61,11 +61,8 @@ const LVT_PERIODIC: u32 = 0x00020000;
 
 static mut LAPIC_TMR_FREQ: u32 = 0;
 
-pub fn init_lapic(platform_info: &PlatformInfo) {
-    let lapic = match &platform_info.interrupt_model {
-        InterruptModel::Apic(apic) => LApic::new(apic.local_apic_address as *mut u32),
-        _ => panic!("Could not find APIC"),
-    };
+pub fn init_lapic(apic: &Apic, platform_info: &PlatformInfo) {
+    let lapic = LApic::new(apic.local_apic_address as *mut u32);
 
     unsafe { lapic.write(SVR, SVR_ENABLED | 0xFF) };
 
