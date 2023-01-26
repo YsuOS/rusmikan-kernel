@@ -92,9 +92,10 @@ pub extern "sysv64" fn kernel_main_new_stack(
     let graphic = unsafe { Graphic::init(*fb_config) };
     graphic.clear();
 
-    unsafe { acpi::init_rsdp(rsdp) };
     segment::init();
-    unsafe { interrupts::init() };
+    let acpi_tables = unsafe { acpi::init(rsdp as usize) };
+    let pm_timer = { acpi_tables.platform_info().unwrap().pm_timer.unwrap() };
+    interrupts::init(pm_timer);
 
     //unsafe { *(0xfffffffffffffff as *mut u64) = 42 };
 

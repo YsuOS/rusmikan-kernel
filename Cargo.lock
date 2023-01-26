@@ -3,6 +3,17 @@
 version = 3
 
 [[package]]
+name = "acpi"
+version = "4.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "654f48ab3178632ea535be1765073b990895cb62f70a7e5671975d7150c26d15"
+dependencies = [
+ "bit_field",
+ "log",
+ "rsdp",
+]
+
+[[package]]
 name = "arrayvec"
 version = "0.7.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -104,11 +115,11 @@ dependencies = [
 name = "rusmikan-kernel"
 version = "0.1.0"
 dependencies = [
+ "acpi",
  "arrayvec",
  "bit_field",
  "lazy_static",
  "pc-keyboard",
- "rsdp",
  "rusmikan",
  "spin 0.9.4",
  "uart_16550",

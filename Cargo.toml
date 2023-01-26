@@ -15,7 +15,7 @@ x86_64 = "0.14.10"
 bit_field = "0.10.1"
 pc-keyboard = "0.5.1"
 uart_16550 = "0.2.18"
-rsdp = "2.0.0"
+acpi = "4.1.1"
 
 [profile.dev]
 panic = "abort"

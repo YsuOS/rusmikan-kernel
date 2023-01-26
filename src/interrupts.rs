@@ -3,6 +3,9 @@ use crate::{
     lapic::{disable_pic_8259, init_lapic, EOI},
     print, println, segment, serial_println, JIFFIES,
 };
+use acpi::platform::PmTimer;
+use lazy_static::lazy_static;
+use spin::Mutex;
 use x86_64::{
     instructions::port::Port,
     structures::idt::{InterruptDescriptorTable, InterruptStackFrame},
@@ -13,11 +16,13 @@ pub const IRQ_OFFSET: u8 = 32; // first 32 entries are reserved for exception by
 pub const IRQ_TMR: u32 = 0;
 pub const IRQ_KBD: u32 = 1;
 
-pub unsafe fn init() {
+pub fn init(pm_timer: PmTimer) {
     init_idt();
-    disable_pic_8259();
-    init_lapic();
-    init_io_apic();
+    unsafe {
+        disable_pic_8259();
+        init_lapic(pm_timer);
+        init_io_apic();
+    }
     x86_64::instructions::interrupts::enable();
 }
 
@@ -28,15 +33,22 @@ enum InterruptIndex {
     Keyboard,
 }
 
-static mut IDT: InterruptDescriptorTable = InterruptDescriptorTable::new();
+lazy_static! {
+    static ref IDT: InterruptDescriptorTable = {
+        let mut idt = InterruptDescriptorTable::new();
+        idt.breakpoint.set_handler_fn(breakpoint_handler);
+        unsafe {
+            idt.double_fault
+                .set_handler_fn(double_fault_handler)
+                .set_stack_index(segment::DOUBLE_FAULT_IST_INDEX);
+        }
+        idt[InterruptIndex::Timer as usize].set_handler_fn(timer_interrupt_handler);
+        idt[InterruptIndex::Keyboard as usize].set_handler_fn(keyboard_interrupt_handler);
+        idt
+    };
+}
 
-unsafe fn init_idt() {
-    IDT.breakpoint.set_handler_fn(breakpoint_handler);
-    IDT.double_fault.set_handler_fn(double_fault_handler);
-    IDT[InterruptIndex::Timer as usize]
-        .set_handler_fn(timer_interrupt_handler)
-        .set_stack_index(segment::DOUBLE_FAULT_IST_INDEX);
-    IDT[InterruptIndex::Keyboard as usize].set_handler_fn(keyboard_interrupt_handler);
+fn init_idt() {
     IDT.load();
 }
 

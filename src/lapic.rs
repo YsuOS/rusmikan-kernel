@@ -2,6 +2,7 @@ use crate::{
     acpi::wait_milliseconds_with_pm_timer,
     interrupts::{IRQ_OFFSET, IRQ_TMR},
 };
+use acpi::platform::PmTimer;
 use core::ptr;
 use x86_64::instructions::port::Port;
 
@@ -23,11 +24,11 @@ const LVT_PERIODIC: u32 = 0x00020000;
 
 static mut LAPIC_TMR_FREQ: u32 = 0;
 
-pub unsafe fn init_lapic() {
+pub unsafe fn init_lapic(pm_timer: PmTimer) {
     let svr = SVR as *mut u32;
     *svr = SVR_ENABLED | 0xFF;
 
-    init_lapic_timer();
+    init_lapic_timer(pm_timer);
 }
 
 pub unsafe fn disable_pic_8259() {
@@ -35,7 +36,7 @@ pub unsafe fn disable_pic_8259() {
     Port::new(0x21).write(0xffu8);
 }
 
-unsafe fn init_lapic_timer() {
+unsafe fn init_lapic_timer(pm_timer: PmTimer) {
     let lvt_timer = LVT_TMR as *mut u32;
     let timer_div = TMRDIV as *mut u32;
     let timer_init_cnt = TMRINITCNT as *mut u32;
@@ -43,7 +44,7 @@ unsafe fn init_lapic_timer() {
     *lvt_timer = LVT_ONESHOT | LVT_MASKED;
 
     start_lapic_timer();
-    wait_milliseconds_with_pm_timer(100);
+    wait_milliseconds_with_pm_timer(pm_timer, 100);
     let elapsed = lapic_timer_elapsed();
     stop_lapic_timer();
     LAPIC_TMR_FREQ = elapsed * 10;
