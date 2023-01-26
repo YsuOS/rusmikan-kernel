@@ -1,11 +1,12 @@
 use crate::{
     acpi::{get_apic_info, get_bsp_info},
     ioapic::init_io_apic,
-    lapic::{disable_pic_8259, init_lapic, EOI},
+    lapic::{disable_pic_8259, init_lapic, EOI, LAPIC},
     print, println, segment, serial_println, JIFFIES,
 };
 use acpi::PlatformInfo;
 use lazy_static::lazy_static;
+use pc_keyboard::{layouts, DecodedKey, HandleControl, Keyboard, ScancodeSet1};
 use x86_64::{
     instructions::port::Port,
     structures::idt::{InterruptDescriptorTable, InterruptStackFrame},
@@ -58,8 +59,6 @@ extern "x86-interrupt" fn breakpoint_handler(stack_frame: InterruptStackFrame) {
 }
 
 extern "x86-interrupt" fn keyboard_interrupt_handler(_stack_frame: InterruptStackFrame) {
-    use pc_keyboard::{layouts, DecodedKey, HandleControl, Keyboard, ScancodeSet1};
-
     let mut kb = Keyboard::new(layouts::Us104Key, ScancodeSet1, HandleControl::Ignore);
     let mut port = Port::new(0x60);
 
@@ -72,8 +71,9 @@ extern "x86-interrupt" fn keyboard_interrupt_handler(_stack_frame: InterruptStac
         }
     }
 
+    let lapic = LAPIC.get().unwrap();
     unsafe {
-        *(EOI as *mut u32) = 0;
+        lapic.write(EOI, 0);
     }
 }
 
@@ -81,7 +81,8 @@ extern "x86-interrupt" fn timer_interrupt_handler(_stack_frame: InterruptStackFr
     unsafe {
         JIFFIES += 1; // 1 tick
         println!("Timer Interrupt: {} tick", JIFFIES);
-        *(EOI as *mut u32) = 0;
+        let lapic = LAPIC.get().unwrap();
+        lapic.write(EOI, 0);
     }
 }
 

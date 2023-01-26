@@ -7,22 +7,31 @@ use acpi::{
     PlatformInfo,
 };
 use core::ptr;
+use spin::Once;
 use x86_64::instructions::port::Port;
 
-struct LApic {
+// FIXME: Once is not thread-safe
+pub static LAPIC: Once<LApic> = Once::new();
+
+pub struct LApic {
     ptr: *mut u32,
 }
 
+unsafe impl Sync for LApic {}
+unsafe impl Send for LApic {}
+
 impl LApic {
-    fn new(addr: *mut u32) -> Self {
-        Self { ptr: addr }
+    fn new(addr: u32) -> Self {
+        Self {
+            ptr: addr as *mut u32,
+        }
     }
 
     unsafe fn read(&self, offset: u32) -> u32 {
         ptr::read_volatile((self.ptr as u32 + offset) as *mut u32)
     }
 
-    unsafe fn write(&self, offset: u32, value: u32) {
+    pub unsafe fn write(&self, offset: u32, value: u32) {
         ptr::write_volatile((self.ptr as u32 + offset) as *mut u32, value);
     }
 
@@ -43,11 +52,9 @@ impl LApic {
     }
 }
 
-// MMIO Address
-pub const LAPIC: u32 = 0xFEE00000;
 // LAPIC Register Address
 const SVR: u32 = 0x000000F0;
-pub const EOI: u32 = LAPIC + 0x000000B0;
+pub const EOI: u32 = 0x000000B0;
 const LVT_TMR: u32 = 0x00000320;
 const TMRINITCNT: u32 = 0x00000380;
 const TMRCURRCNT: u32 = 0x00000390;
@@ -62,7 +69,7 @@ const LVT_PERIODIC: u32 = 0x00020000;
 static mut LAPIC_TMR_FREQ: u32 = 0;
 
 pub fn init_lapic(apic: &Apic, platform_info: &PlatformInfo) {
-    let lapic = LApic::new(apic.local_apic_address as *mut u32);
+    let lapic = LAPIC.call_once(|| LApic::new(apic.local_apic_address as u32));
 
     unsafe { lapic.write(SVR, SVR_ENABLED | 0xFF) };
 
