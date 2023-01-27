@@ -1,11 +1,8 @@
 use crate::{
-    acpi::wait_milliseconds_with_pm_timer,
+    acpi::{get_pm_timer_info, wait_milliseconds_with_pm_timer},
     interrupts::{IRQ_OFFSET, IRQ_TMR},
 };
-use acpi::{
-    platform::{interrupt::Apic, PmTimer},
-    PlatformInfo,
-};
+use acpi::platform::{interrupt::Apic, PmTimer};
 use core::ptr;
 use spin::Once;
 use x86_64::instructions::port::Port;
@@ -68,12 +65,12 @@ const LVT_PERIODIC: u32 = 0x00020000;
 
 static mut LAPIC_TMR_FREQ: u32 = 0;
 
-pub fn init_lapic(apic: &Apic, platform_info: &PlatformInfo) {
+pub fn init_lapic(apic: &Apic) {
     let lapic = LAPIC.call_once(|| LApic::new(apic.local_apic_address as u32));
 
     unsafe { lapic.write(SVR, SVR_ENABLED | 0xFF) };
 
-    let pm_timer = &platform_info.pm_timer.as_ref().unwrap();
+    let pm_timer = get_pm_timer_info();
     unsafe { init_lapic_timer(&lapic, pm_timer) };
 }
 

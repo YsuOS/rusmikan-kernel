@@ -1,10 +1,9 @@
 use crate::{
-    acpi::{get_apic_info, get_bsp_info},
+    acpi::get_apic_info,
     ioapic::init_io_apic,
     lapic::{disable_pic_8259, init_lapic, EOI, LAPIC},
     print, println, segment, serial_println, JIFFIES,
 };
-use acpi::PlatformInfo;
 use lazy_static::lazy_static;
 use pc_keyboard::{layouts, DecodedKey, HandleControl, Keyboard, ScancodeSet1};
 use x86_64::{
@@ -17,14 +16,12 @@ pub const IRQ_OFFSET: u8 = 32; // first 32 entries are reserved for exception by
 pub const IRQ_TMR: u32 = 0;
 pub const IRQ_KBD: u32 = 1;
 
-pub fn init(platform_info: &PlatformInfo) {
+pub fn init() {
     init_idt();
     unsafe { disable_pic_8259() };
-
-    let apic = get_apic_info(platform_info);
-    init_lapic(apic, platform_info);
-    let bsp_info = get_bsp_info(platform_info);
-    init_io_apic(apic, bsp_info.local_apic_id);
+    let apic = get_apic_info();
+    init_lapic(apic);
+    init_io_apic(apic);
     x86_64::instructions::interrupts::enable();
 }
 

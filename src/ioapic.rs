@@ -1,6 +1,9 @@
 use acpi::platform::interrupt::Apic;
 
-use crate::interrupts::{IRQ_KBD, IRQ_OFFSET};
+use crate::{
+    acpi::get_bsp_info,
+    interrupts::{IRQ_KBD, IRQ_OFFSET},
+};
 use core::ptr;
 
 struct IoApic {
@@ -39,7 +42,8 @@ const IOREDTBL: u32 = 0x00000010;
 
 const REDTBL_MASKED: u32 = 0x00010000;
 
-pub fn init_io_apic(apic: &Apic, bsp_lapic_id: u32) {
+pub fn init_io_apic(apic: &Apic) {
+    let bsp_lapic_id = get_bsp_info().local_apic_id;
     let ioapic = IoApic::new(apic.io_apics.first().unwrap().address);
     let max_intr = unsafe { ioapic.read(IOAPICID) } >> 16 & 0xFF;
 

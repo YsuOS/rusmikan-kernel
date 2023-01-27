@@ -3,12 +3,20 @@ use acpi::{
     AcpiHandler, AcpiTables, InterruptModel, PhysicalMapping, PlatformInfo,
 };
 use core::ptr::NonNull;
+use spin::Once;
 use x86_64::{instructions::port::Port, PhysAddr, VirtAddr};
 
 const PMTIMER_FREQ: usize = 3579545;
 
-pub unsafe fn init(addr: usize) -> AcpiTables<KernelAcpiHandler> {
-    AcpiTables::from_rsdp(KernelAcpiHandler, addr).unwrap()
+static PLATFORM_INFO: Once<PlatformInfo> = Once::new();
+
+pub unsafe fn init(addr: usize) {
+    PLATFORM_INFO.call_once(|| {
+        AcpiTables::from_rsdp(KernelAcpiHandler, addr)
+            .unwrap()
+            .platform_info()
+            .unwrap()
+    });
 }
 
 pub fn wait_milliseconds_with_pm_timer(pm_timer: &PmTimer, msec: u32) {
@@ -26,15 +34,23 @@ pub fn wait_milliseconds_with_pm_timer(pm_timer: &PmTimer, msec: u32) {
     while unsafe { timer.read() } < end {}
 }
 
-pub fn get_apic_info(platform_info: &PlatformInfo) -> &Apic {
-    match &platform_info.interrupt_model {
+pub fn platform_info() -> &'static PlatformInfo {
+    PLATFORM_INFO.get().unwrap()
+}
+
+pub fn get_apic_info() -> &'static Apic {
+    match &platform_info().interrupt_model {
         InterruptModel::Apic(apic) => apic,
         _ => panic!("Could not find APIC"),
     }
 }
 
-pub fn get_bsp_info(platform_info: &PlatformInfo) -> Processor {
-    platform_info
+pub fn get_pm_timer_info() -> &'static PmTimer {
+    platform_info().pm_timer.as_ref().unwrap()
+}
+
+pub fn get_bsp_info() -> Processor {
+    platform_info()
         .processor_info
         .as_ref()
         .unwrap()

@@ -93,9 +93,8 @@ pub extern "sysv64" fn kernel_main_new_stack(
     graphic.clear();
 
     segment::init();
-    let acpi_tables = unsafe { acpi::init(rsdp as usize) };
-    let platform_info = acpi_tables.platform_info().unwrap();
-    interrupts::init(&platform_info);
+    unsafe { acpi::init(rsdp as usize) };
+    interrupts::init();
 
     //unsafe { *(0xfffffffffffffff as *mut u64) = 42 };
 
