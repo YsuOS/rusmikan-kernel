@@ -1,14 +1,12 @@
 use crate::{
-    acpi::{get_pm_timer_info, wait_milliseconds_with_pm_timer},
+    acpi::{get_apic_info, get_pm_timer_info, wait_milliseconds_with_pm_timer},
     interrupts::{IRQ_OFFSET, IRQ_TMR},
 };
-use acpi::platform::{interrupt::Apic, PmTimer};
 use core::ptr;
-use spin::Once;
+use spin::Lazy;
 use x86_64::instructions::port::Port;
 
-// FIXME: Once is not thread-safe
-pub static LAPIC: Once<LApic> = Once::new();
+pub static LAPIC: Lazy<LApic> = Lazy::new(|| LApic::new(get_apic_info().local_apic_address as u32));
 
 pub struct LApic {
     ptr: *mut u32,
@@ -65,13 +63,10 @@ const LVT_PERIODIC: u32 = 0x00020000;
 
 static mut LAPIC_TMR_FREQ: u32 = 0;
 
-pub fn init_lapic(apic: &Apic) {
-    let lapic = LAPIC.call_once(|| LApic::new(apic.local_apic_address as u32));
+pub fn init_lapic() {
+    unsafe { LAPIC.write(SVR, SVR_ENABLED | 0xFF) };
 
-    unsafe { lapic.write(SVR, SVR_ENABLED | 0xFF) };
-
-    let pm_timer = get_pm_timer_info();
-    unsafe { init_lapic_timer(&lapic, pm_timer) };
+    unsafe { init_lapic_timer() };
 }
 
 pub unsafe fn disable_pic_8259() {
@@ -79,16 +74,17 @@ pub unsafe fn disable_pic_8259() {
     Port::new(0x21).write(0xffu8);
 }
 
-unsafe fn init_lapic_timer(lapic: &LApic, pm_timer: &PmTimer) {
-    lapic.write(TMRDIV, X1);
-    lapic.write(LVT_TMR, LVT_ONESHOT | LVT_MASKED);
+unsafe fn init_lapic_timer() {
+    let pm_timer = get_pm_timer_info();
+    LAPIC.write(TMRDIV, X1);
+    LAPIC.write(LVT_TMR, LVT_ONESHOT | LVT_MASKED);
 
-    lapic.start_lapic_timer();
+    LAPIC.start_lapic_timer();
     wait_milliseconds_with_pm_timer(pm_timer, 100);
-    let elapsed = lapic.lapic_timer_elapsed();
-    lapic.stop_lapic_timer();
+    let elapsed = LAPIC.lapic_timer_elapsed();
+    LAPIC.stop_lapic_timer();
     LAPIC_TMR_FREQ = elapsed * 10;
 
-    lapic.write(LVT_TMR, LVT_PERIODIC | (IRQ_OFFSET as u32 + IRQ_TMR));
-    lapic.write(TMRINITCNT, LAPIC_TMR_FREQ / 100);
+    LAPIC.write(LVT_TMR, LVT_PERIODIC | (IRQ_OFFSET as u32 + IRQ_TMR));
+    LAPIC.write(TMRINITCNT, LAPIC_TMR_FREQ / 100);
 }

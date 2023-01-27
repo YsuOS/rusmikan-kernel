@@ -1,7 +1,5 @@
-use acpi::platform::interrupt::Apic;
-
 use crate::{
-    acpi::get_bsp_info,
+    acpi::{get_apic_info, get_bsp_info},
     interrupts::{IRQ_KBD, IRQ_OFFSET},
 };
 use core::ptr;
@@ -42,9 +40,9 @@ const IOREDTBL: u32 = 0x00000010;
 
 const REDTBL_MASKED: u32 = 0x00010000;
 
-pub fn init_io_apic(apic: &Apic) {
+pub fn init_io_apic() {
     let bsp_lapic_id = get_bsp_info().local_apic_id;
-    let ioapic = IoApic::new(apic.io_apics.first().unwrap().address);
+    let ioapic = IoApic::new(get_apic_info().io_apics.first().unwrap().address);
     let max_intr = unsafe { ioapic.read(IOAPICID) } >> 16 & 0xFF;
 
     // Mark all interrupts edge-triggered, active high, disable, and not routed to any CPUs.

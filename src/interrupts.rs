@@ -1,5 +1,4 @@
 use crate::{
-    acpi::get_apic_info,
     ioapic::init_io_apic,
     lapic::{disable_pic_8259, init_lapic, EOI, LAPIC},
     print, println, segment, serial_println, JIFFIES,
@@ -19,9 +18,8 @@ pub const IRQ_KBD: u32 = 1;
 pub fn init() {
     init_idt();
     unsafe { disable_pic_8259() };
-    let apic = get_apic_info();
-    init_lapic(apic);
-    init_io_apic(apic);
+    init_lapic();
+    init_io_apic();
     x86_64::instructions::interrupts::enable();
 }
 
@@ -68,9 +66,8 @@ extern "x86-interrupt" fn keyboard_interrupt_handler(_stack_frame: InterruptStac
         }
     }
 
-    let lapic = LAPIC.get().unwrap();
     unsafe {
-        lapic.write(EOI, 0);
+        LAPIC.write(EOI, 0);
     }
 }
 
@@ -78,8 +75,7 @@ extern "x86-interrupt" fn timer_interrupt_handler(_stack_frame: InterruptStackFr
     unsafe {
         JIFFIES += 1; // 1 tick
         println!("Timer Interrupt: {} tick", JIFFIES);
-        let lapic = LAPIC.get().unwrap();
-        lapic.write(EOI, 0);
+        LAPIC.write(EOI, 0);
     }
 }
 
