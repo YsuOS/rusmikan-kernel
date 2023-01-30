@@ -3,8 +3,8 @@ use crate::{
     lapic::{disable_pic_8259, init_lapic, EOI, LAPIC},
     print, println, segment, serial_println, JIFFIES,
 };
-use lazy_static::lazy_static;
 use pc_keyboard::{layouts, DecodedKey, HandleControl, Keyboard, ScancodeSet1};
+use spin::Lazy;
 use x86_64::{
     instructions::port::Port,
     structures::idt::{InterruptDescriptorTable, InterruptStackFrame},
@@ -30,20 +30,18 @@ enum InterruptIndex {
     Keyboard,
 }
 
-lazy_static! {
-    static ref IDT: InterruptDescriptorTable = {
-        let mut idt = InterruptDescriptorTable::new();
-        idt.breakpoint.set_handler_fn(breakpoint_handler);
-        unsafe {
-            idt.double_fault
-                .set_handler_fn(double_fault_handler)
-                .set_stack_index(segment::DOUBLE_FAULT_IST_INDEX);
-        }
-        idt[InterruptIndex::Timer as usize].set_handler_fn(timer_interrupt_handler);
-        idt[InterruptIndex::Keyboard as usize].set_handler_fn(keyboard_interrupt_handler);
-        idt
-    };
-}
+static IDT: Lazy<InterruptDescriptorTable> = Lazy::new(|| {
+    let mut idt = InterruptDescriptorTable::new();
+    idt.breakpoint.set_handler_fn(breakpoint_handler);
+    unsafe {
+        idt.double_fault
+            .set_handler_fn(double_fault_handler)
+            .set_stack_index(segment::DOUBLE_FAULT_IST_INDEX);
+    }
+    idt[InterruptIndex::Timer as usize].set_handler_fn(timer_interrupt_handler);
+    idt[InterruptIndex::Keyboard as usize].set_handler_fn(keyboard_interrupt_handler);
+    idt
+});
 
 fn init_idt() {
     IDT.load();

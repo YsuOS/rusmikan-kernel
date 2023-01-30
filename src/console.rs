@@ -1,6 +1,5 @@
 use crate::graphics::{Graphic, Rgb, GRAPHIC};
 use core::fmt::Write;
-use lazy_static::lazy_static;
 use spin::Mutex;
 
 const ROWS: usize = 25;
@@ -8,9 +7,7 @@ const COLUMNS: usize = 80;
 const WIDTH_PER_WORD: usize = 8;
 const HEIGHT_PER_WORD: usize = 16;
 
-lazy_static! {
-    pub static ref CONSOLE: Mutex<Console> = Mutex::new(Console::new());
-}
+pub static CONSOLE: Mutex<Console> = Mutex::new(Console::new());
 
 pub struct Console {
     buffer: [[char; COLUMNS]; ROWS],
@@ -20,9 +17,9 @@ pub struct Console {
 }
 
 impl Console {
-    fn new() -> Self {
+    const fn new() -> Self {
         Console {
-            buffer: [[0.into(); COLUMNS]; ROWS],
+            buffer: [[0 as char; COLUMNS]; ROWS],
             column: 0,
             row: 0,
             rgb: Rgb { r: 0, g: 0, b: 0 },
