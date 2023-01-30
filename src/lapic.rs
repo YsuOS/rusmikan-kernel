@@ -61,8 +61,6 @@ const LVT_MASKED: u32 = 0x00010000;
 const LVT_ONESHOT: u32 = 0x00000000;
 const LVT_PERIODIC: u32 = 0x00020000;
 
-static mut LAPIC_TMR_FREQ: u32 = 0;
-
 pub fn init_lapic() {
     unsafe { LAPIC.write(SVR, SVR_ENABLED | 0xFF) };
 
@@ -83,8 +81,8 @@ unsafe fn init_lapic_timer() {
     wait_milliseconds_with_pm_timer(pm_timer, 100);
     let elapsed = LAPIC.lapic_timer_elapsed();
     LAPIC.stop_lapic_timer();
-    LAPIC_TMR_FREQ = elapsed * 10;
+    let lapic_tmr_freq: u32 = elapsed * 10;
 
     LAPIC.write(LVT_TMR, LVT_PERIODIC | (IRQ_OFFSET as u32 + IRQ_TMR));
-    LAPIC.write(TMRINITCNT, LAPIC_TMR_FREQ / 100);
+    LAPIC.write(TMRINITCNT, lapic_tmr_freq / 100);
 }

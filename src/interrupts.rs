@@ -64,17 +64,15 @@ extern "x86-interrupt" fn keyboard_interrupt_handler(_stack_frame: InterruptStac
         }
     }
 
-    unsafe {
-        LAPIC.write(EOI, 0);
-    }
+    unsafe { LAPIC.write(EOI, 0) };
 }
 
 extern "x86-interrupt" fn timer_interrupt_handler(_stack_frame: InterruptStackFrame) {
-    unsafe {
-        JIFFIES += 1; // 1 tick
-        println!("Timer Interrupt: {} tick", JIFFIES);
-        LAPIC.write(EOI, 0);
-    }
+    let mut jiffies = JIFFIES.lock();
+    *jiffies += 1; // 1 tick
+
+    println!("Timer Interrupt: {} tick", jiffies);
+    unsafe { LAPIC.write(EOI, 0) };
 }
 
 extern "x86-interrupt" fn double_fault_handler(

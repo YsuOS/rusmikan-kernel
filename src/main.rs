@@ -26,6 +26,7 @@ use graphics::{Graphic, Rgb};
 use paging::active_level_4_table;
 use pci::list_pci_devices;
 use rusmikan::{FrameBufferConfig, MemoryMap};
+use spin::Mutex;
 use x86_64::{
     structures::paging::{OffsetPageTable, Translate},
     VirtAddr,
@@ -39,7 +40,7 @@ const BG_COLOR: Rgb = Rgb {
     b: 0,
 };
 
-pub static mut JIFFIES: u64 = 0;
+pub static JIFFIES: Mutex<u64> = Mutex::new(0);
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(u32)]
