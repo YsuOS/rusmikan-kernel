@@ -90,18 +90,16 @@ pub extern "sysv64" fn kernel_main_new_stack(
     BitMapFrameManager::init(memory_map);
     paging::init();
 
-    let graphic = unsafe { Graphic::init(*fb_config) };
-    graphic.clear();
+    Graphic::init(*fb_config);
 
     segment::init();
     unsafe { acpi::init(rsdp as usize) };
     interrupts::init();
 
-    //unsafe { *(0xfffffffffffffff as *mut u64) = 42 };
-
     println!("This is Rusmikan");
     println!("1 + 2 = {}", 1 + 2);
     // x86_64::instructions::interrupts::int3();
+    //unsafe { *(0xfffffffffffffff as *mut u64) = 42 };
 
     list_pci_devices();
 
@@ -167,7 +165,6 @@ pub extern "sysv64" fn kernel_main_new_stack(
 macro_rules! print {
     ($($arg:tt)*) => ($crate::_print(format_args!($($arg)*)));
 }
-
 #[macro_export]
 macro_rules! println {
     () => ($crate::print!("\n"));

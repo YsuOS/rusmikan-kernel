@@ -1,5 +1,6 @@
 use crate::{ascii_font::FONTS, BG_COLOR};
 use rusmikan::{FrameBuffer, FrameBufferConfig};
+use spin::{Mutex, Once};
 
 #[derive(Copy, Clone)]
 pub struct Rgb {
@@ -8,7 +9,10 @@ pub struct Rgb {
     pub b: u8,
 }
 
-pub static mut GRAPHIC: Option<Graphic> = None;
+pub static GRAPHIC: Once<Mutex<Graphic>> = Once::new();
+
+unsafe impl Sync for Graphic {}
+unsafe impl Send for Graphic {}
 
 pub struct Graphic {
     fb_config: FrameBufferConfig,
@@ -16,12 +20,7 @@ pub struct Graphic {
 }
 
 impl Graphic {
-    pub unsafe fn init(fb_config: FrameBufferConfig) -> &'static mut Self {
-        GRAPHIC = Some(Self::new(fb_config));
-        GRAPHIC.as_mut().unwrap()
-    }
-
-    fn new(fb_config: FrameBufferConfig) -> Self {
+    pub fn init(fb_config: FrameBufferConfig) {
         unsafe fn write_pixel_rgb(fb: &mut FrameBuffer, base: usize, rgb: Rgb) {
             fb.write_value(base, [rgb.r, rgb.g, rgb.b]);
         }
@@ -32,10 +31,14 @@ impl Graphic {
             rusmikan::PixelFormat::RGB => write_pixel_rgb,
             rusmikan::PixelFormat::BGR => write_pixel_bgr,
         };
-        Graphic {
-            fb_config,
-            pixel_writer,
-        }
+        GRAPHIC.call_once(|| {
+            let graphic = Mutex::new(Graphic {
+                fb_config,
+                pixel_writer,
+            });
+            graphic.lock().clear();
+            graphic
+        });
     }
 
     fn write(&mut self, x: usize, y: usize, rgb: Rgb) {
@@ -60,7 +63,7 @@ impl Graphic {
         }
     }
 
-    pub fn clear(&mut self) {
+    fn clear(&mut self) {
         let vert = self.fb_config.vertical_resolution;
 
         self.clear_line(0, vert);
