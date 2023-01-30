@@ -77,7 +77,7 @@ fn panic(info: &PanicInfo) -> ! {
 struct KernelMainStack([u8; 1024 * 1024]);
 
 #[no_mangle]
-static mut KERNEL_MAIN_STACK: KernelMainStack = KernelMainStack([0; 1024 * 1024]);
+static KERNEL_MAIN_STACK: KernelMainStack = KernelMainStack([0; 1024 * 1024]);
 
 #[no_mangle]
 pub extern "sysv64" fn kernel_main_new_stack(
@@ -110,8 +110,10 @@ pub extern "sysv64" fn kernel_main_new_stack(
     }
 
     let phys_mem_offset = VirtAddr::new(0);
-    let l4_table = unsafe { active_level_4_table(phys_mem_offset) };
-    let mapper = unsafe { OffsetPageTable::new(l4_table, phys_mem_offset) };
+    let mapper = unsafe {
+        let l4_table = active_level_4_table(phys_mem_offset);
+        OffsetPageTable::new(l4_table, phys_mem_offset)
+    };
 
     // use x86_64::structures::paging::PageTable;
     //    for (i,entry) in l4_table.iter().enumerate() {

@@ -1,6 +1,7 @@
 use crate::serial_println;
 use bit_field::BitField;
 use core::fmt::Display;
+use spin::Mutex;
 use x86_64::instructions::port::Port;
 
 const MAX_DEVICES: usize = 32;
@@ -11,8 +12,8 @@ const INVALID_VENDOR_ID: u16 = 0xffff;
 // refs.
 // https://wiki.osdev.org/PCI
 
-static mut CONFIG_ADDRESS: Port<u32> = Port::new(0x0cf8);
-static mut CONFIG_DATA: Port<u32> = Port::new(0x0cfc);
+static CONFIG_ADDRESS: Mutex<Port<u32>> = Mutex::new(Port::new(0x0cf8));
+static CONFIG_DATA: Mutex<Port<u32>> = Mutex::new(Port::new(0x0cfc));
 
 const EMPTY_DEVICE: Device = Device {
     bus: 0x0,
@@ -121,8 +122,8 @@ impl Device {
     fn read(self, reg: u8) -> u32 {
         let addr = self.make_address(reg);
         unsafe {
-            CONFIG_ADDRESS.write(addr);
-            CONFIG_DATA.read()
+            CONFIG_ADDRESS.lock().write(addr);
+            CONFIG_DATA.lock().read()
         }
     }
 
