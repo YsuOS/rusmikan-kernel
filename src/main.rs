@@ -3,6 +3,9 @@
 #![feature(abi_x86_interrupt)]
 #![feature(alloc_error_handler)]
 #![feature(const_mut_refs)]
+#![feature(custom_test_frameworks)]
+#![test_runner(crate::test_runner)]
+#![reexport_test_harness_main = "test_main"]
 
 mod acpi;
 mod allocator;
@@ -45,7 +48,7 @@ pub static JIFFIES: Mutex<u64> = Mutex::new(0);
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(u32)]
 enum QemuExitCode {
-    _Success = 0x10,
+    Success = 0x10,
     Failed = 0x11,
 }
 
@@ -86,7 +89,6 @@ pub extern "sysv64" fn kernel_main_new_stack(
     memory_map: &MemoryMap,
     rsdp: u64,
 ) -> ! {
-    serial_println!("System Info");
     BitMapFrameManager::init(memory_map);
     paging::init();
 
@@ -95,6 +97,9 @@ pub extern "sysv64" fn kernel_main_new_stack(
     segment::init();
     unsafe { acpi::init(rsdp as usize) };
     interrupts::init();
+
+    #[cfg(test)]
+    test_main();
 
     println!("This is Rusmikan");
     println!("1 + 2 = {}", 1 + 2);
@@ -159,6 +164,36 @@ pub extern "sysv64" fn kernel_main_new_stack(
             asm!("hlt");
         }
     }
+}
+
+pub trait Testable {
+    fn run(&self) -> ();
+}
+
+impl<T> Testable for T
+where
+    T: Fn(),
+{
+    fn run(&self) {
+        serial_print!("{}...\t", core::any::type_name::<T>());
+        self();
+        serial_println!("[ok]");
+    }
+}
+
+#[cfg(test)]
+fn test_runner(tests: &[&dyn Testable]) {
+    serial_println!("Running {} tests", tests.len());
+    for test in tests {
+        test.run();
+    }
+
+    exit_qemu(QemuExitCode::Success);
+}
+
+#[test_case]
+fn trivial_assertion() {
+    assert_eq!(1, 1);
 }
 
 #[macro_export]
