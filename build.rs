@@ -5,7 +5,7 @@ use std::process::Command;
 fn main() {
     let out_dir = PathBuf::from(env::var_os("OUT_DIR").unwrap());
     println!("cargo:rustc-link-search={}", out_dir.display());
-    println!("{:?}",out_dir);
+    println!("{:?}", out_dir);
 
     // asm.s -> asm.o -> libasm.a
     let out_asm = {
@@ -24,4 +24,3 @@ fn main() {
         .unwrap();
     println!("cargo:rustc-link-lib=static=asm");
 }
-
